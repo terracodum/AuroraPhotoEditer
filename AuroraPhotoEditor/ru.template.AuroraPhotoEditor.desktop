@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=ru.template.AuroraPhotoEditor
+Exec=/usr/bin/ru.template.AuroraPhotoEditor
+Name=PhotoEditor
+Name[ru]=Редактор фото
+
+[X-Application]
+Permissions=Pictures
+OrganizationName=ru.template
+ApplicationName=AuroraPhotoEditor
+ExecDBus=/usr/bin/ru.template.AuroraPhotoEditor
