@@ -6,9 +6,8 @@ Exec=/usr/bin/ru.template.AuroraPhotoEditor
 Name=PhotoEditor
 Name[ru]=Редактор фото
 
-[X-Application]
-Permissions=Media;Pictures
-X-NetworkDenied=true
+[X-Sailjail]
+Permissions=Pictures
 OrganizationName=ru.template
 ApplicationName=AuroraPhotoEditor
 ExecDBus=/usr/bin/ru.template.AuroraPhotoEditor
