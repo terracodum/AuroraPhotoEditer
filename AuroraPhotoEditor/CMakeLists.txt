@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(ru.template.AuroraPhotoEditor CXX)
 
-find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
+find_package (Qt5 COMPONENTS Core Qml Gui Quick LinguistTools REQUIRED)
 
 include(FindPkgConfig)
 pkg_search_module(AURORA auroraapp REQUIRED)
