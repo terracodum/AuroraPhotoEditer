@@ -4,8 +4,12 @@ project(ru.template.AuroraPhotoEditor CXX)
 find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
 
 include(FindPkgConfig)
+pkg_search_module(TFLITE REQUIRED tensorflow-lite)
+pkg_search_module(OPENCV REQUIRED opencv-core-imgcodecs)
 pkg_search_module(AURORA auroraapp REQUIRED)
 pkg_search_module(AURORA auroraapp_i18n REQUIRED)
+
+set(THIRDPARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -22,6 +26,7 @@ set(SOURCES
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
     src/main.cpp
+    src/MLInferenceEngine.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -35,10 +40,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     $<BUILD_INTERFACE:
     ${AURORA_INCLUDE_DIRS}
+    ${TFLITE_INCLUDE_DIRS}
+    ${OPENCV_INCLUDE_DIRS}
 >)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Quick
     ${AURORA_LDFLAGS}
+    ${TFLITE_LDFLAGS}
+    ${OPENCV_LDFLAGS}
 )
 
 install(TARGETS ${PROJECT_NAME}
