@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    # TensorFlow Lite headers (via Conan, copied to host-accessible path)
+    - "-I/home/michael/.conan-headers/tensorflow-lite"
+    # OpenCV headers (Conan places them under include/opencv4/)
+    - "-I/home/michael/.conan-headers/opencv/opencv4"
+    # Abseil headers (required by TFLite)
+    - "-I/home/michael/.conan-headers/abseil"
+
+Diagnostics:
+  # Suppress warnings from system/third-party headers
+  Suppress:
+    - "pp_file_not_found"

@@ -49,11 +49,7 @@ if [ ! -f "${conan_rpm_macros}" ]; then
 rm -f "${archive_path}"
 fi
 
-sed -i 's/"--build=*",//g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
-sed -i 's/"--build=!opencv-core-imgcodecs",//g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
-sed -i 's/"--build=!tensorflow-lite",//g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
-sed -i 's/"--build=!eigen",//g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
-sed -i 's/"install",/"install", "--build=*", "--build=!opencv-core-imgcodecs", "--build=!tensorflow-lite", "--build=!eigen",/g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
+sed -i 's/"install",/"install", "--build=missing",/g' "$conan_distribution_directory/bin/conan-install-if-modified" || true
 
 echo "%define __workspace_dir ${HOME}"
 echo "%define __conan_version ${conan_version}"

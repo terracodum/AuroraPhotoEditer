@@ -1,0 +1,15 @@
+# Build directories
+AuroraPhotoEditor/build/
+
+# Qt Creator user settings
+*.user
+*.user.*
+
+# Conan headers cache (local IDE indexing only, not for VCS)
+.conan-headers/
+
+# Translation compiled files
+*.qm
+
+# Large AI Models
+*.onnx

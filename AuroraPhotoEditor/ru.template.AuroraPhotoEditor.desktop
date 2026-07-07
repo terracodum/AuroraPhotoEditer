@@ -7,7 +7,7 @@ Name=PhotoEditor
 Name[ru]=Редактор фото
 
 [X-Application]
-Permissions=RemovableMedia;Pictures
+Permissions=RemovableMedia;Pictures;MediaIndexing
 OrganizationName=ru.template
 ApplicationName=AuroraPhotoEditor
 ExecDBus=/usr/bin/ru.template.AuroraPhotoEditor

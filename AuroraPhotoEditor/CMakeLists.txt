@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(ru.template.AuroraPhotoEditor CXX)
 
-find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
+find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools Concurrent REQUIRED)
 
 include(FindPkgConfig)
-pkg_search_module(TFLITE REQUIRED tensorflow-lite)
-pkg_search_module(OPENCV REQUIRED opencv-core-imgcodecs)
+pkg_check_modules(onnxruntime REQUIRED IMPORTED_TARGET onnxruntime)
 pkg_search_module(AURORA auroraapp REQUIRED)
 pkg_search_module(AURORA auroraapp_i18n REQUIRED)
 
@@ -26,7 +25,8 @@ set(SOURCES
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
     src/main.cpp
-    src/MLInferenceEngine.cpp
+    src/SegmentationEngine.cpp
+    src/ImageProcessor.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -38,22 +38,23 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
-    $<BUILD_INTERFACE:
     ${AURORA_INCLUDE_DIRS}
-    ${TFLITE_INCLUDE_DIRS}
-    ${OPENCV_INCLUDE_DIRS}
->)
+)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Quick
+    Qt5::Concurrent
     ${AURORA_LDFLAGS}
-    ${TFLITE_LDFLAGS}
-    ${OPENCV_LDFLAGS}
+    PkgConfig::onnxruntime
 )
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(DIRECTORY qml
+    DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY models
     DESTINATION share/${PROJECT_NAME}
 )
 
