@@ -22,6 +22,7 @@ set(SOURCES
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
     src/main.cpp
+    src/PipelineManager.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -80,3 +81,6 @@ file(WRITE "${CMAKE_BINARY_DIR}/QtCreatorDeployment.txt"
     "${CMAKE_INSTALL_PREFIX}
 ${CMAKE_BINARY_DIR}/${PROJECT_NAME}:bin
 ")
+
+enable_testing()
+add_subdirectory(tests)
