@@ -6,6 +6,10 @@ find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
 include(FindPkgConfig)
 pkg_search_module(AURORA auroraapp REQUIRED)
 pkg_search_module(AURORA auroraapp_i18n REQUIRED)
+pkg_search_module(OPENCV opencv4)
+if(NOT OPENCV_FOUND)
+    pkg_search_module(OPENCV REQUIRED opencv)
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -22,6 +26,7 @@ set(SOURCES
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
     src/main.cpp
+    src/MLInferenceEngine.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -35,10 +40,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     $<BUILD_INTERFACE:
     ${AURORA_INCLUDE_DIRS}
+    ${OPENCV_INCLUDE_DIRS}
 >)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Quick
     ${AURORA_LDFLAGS}
+    opencv_core
+    opencv_imgcodecs
+    onnxruntime
 )
 
 install(TARGETS ${PROJECT_NAME}
