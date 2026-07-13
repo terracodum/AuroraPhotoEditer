@@ -24,9 +24,24 @@ set(SOURCES
     qml/cover/DefaultCoverPage.qml
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
+    qml/pages/EditorPage.qml
+    qml/pages/BatchProcessingPage.qml
+    qml/pages/HistoryPage.qml
+    qml/pages/BackgroundToolPage.qml
+    qml/pages/EnhanceToolPage.qml
+    qml/pages/StyleToolPage.qml
     src/main.cpp
     src/SegmentationEngine.cpp
     src/ImageProcessor.cpp
+    src/EnhanceEngine.cpp
+    src/StyleTransferEngine.cpp
+    src/MLInferenceEngine.cpp
+    src/PipelineManager.cpp
+    src/BackgroundWorker.cpp
+    src/BatchWorker.cpp
+    src/ImageScaler.cpp
+    src/EditorImageProvider.cpp
+    src/ImageEditorCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)

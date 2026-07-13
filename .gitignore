@@ -13,3 +13,5 @@ AuroraPhotoEditor/build/
 
 # Large AI Models
 *.onnx
+
+*.antigravityignore

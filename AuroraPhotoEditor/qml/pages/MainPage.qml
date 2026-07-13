@@ -31,32 +31,32 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Открыть редактор (Стиль/Улучшение)")
+                onClicked: {
+                    var picker = pageStack.push("Sailfish.Pickers.ImagePickerPage");
+                    picker.selectedContentPropertiesChanged.connect(function() {
+                        var filePath = picker.selectedContentProperties.filePath;
+                        pageStack.push(Qt.resolvedUrl("EditorPage.qml"), { "imagePath": filePath });
+                    });
+                }
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("Фон (Вырезание/Замена)")
                 onClicked: pageStack.push(Qt.resolvedUrl("BackgroundToolPage.qml"))
             }
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Улучшение (Автокоррекция)")
-                onClicked: showStub("Функция автокоррекции в разработке")
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Стиль (Нейросети)")
-                onClicked: showStub("Нейросетевая стилизация в разработке")
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("История проектов")
-                onClicked: showStub("История проектов появится позже")
+                onClicked: pageStack.push(Qt.resolvedUrl("HistoryPage.qml"))
             }
             
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("Пакетная обработка")
-                onClicked: showStub("Пакетная обработка в разработке")
+                onClicked: pageStack.push(Qt.resolvedUrl("BatchProcessingPage.qml"))
             }
         }
     }
