@@ -11,6 +11,7 @@ BuildRequires:  pkgconfig(auroraapp)
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
+BuildRequires:  pkgconfig(Qt5Test)
 
 %define __provides_exclude_from ^%{_datadir}/%{name}/lib/.*$
 %define __requires_exclude_from ^%{_datadir}/%{name}/lib/.*$
