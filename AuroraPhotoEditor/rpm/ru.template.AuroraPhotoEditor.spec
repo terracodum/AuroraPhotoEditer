@@ -48,18 +48,14 @@ SHARED_LIBRARIES="%{buildroot}/%{_datadir}/%{name}/lib"
 mkdir -p "$SHARED_LIBRARIES"
 
 CONAN_LIB_DIR="%{_builddir}/conan-libs/"
-ALL_LIBDIRS=$(grep -h "^libdir=" "$CONAN_LIB_DIR"/*.pc 2>/dev/null | cut -d= -f2 | sort -u || true)
+ALL_LIBDIRS=$(export PKG_CONFIG_PATH="$CONAN_LIB_DIR"; for pc in "$CONAN_LIB_DIR"/*.pc; do [ -f "$pc" ] && pkg-config --variable=libdir "$(basename "$pc" .pc)" 2>/dev/null; done | sort -u || true)
 EXECUTABLE="%{buildroot}/%{_bindir}/%{name}"
 
-if [ -f "$EXECUTABLE" ] && [ -n "$ALL_LIBDIRS" ]; then
-    NEEDED_LIBS=$(objdump -p "$EXECUTABLE" | grep NEEDED | awk '{print $2}')
-    for lib in $NEEDED_LIBS; do
-        for dir in $ALL_LIBDIRS; do
-            if [ -f "$dir/$lib" ]; then
-                cp -d "$dir/$lib"* "$SHARED_LIBRARIES"/
-                break
-            fi
-        done
+if [ -n "$ALL_LIBDIRS" ]; then
+    for dir in $ALL_LIBDIRS; do
+        if [ -d "$dir" ]; then
+            cp -d "$dir"/*.so* "$SHARED_LIBRARIES"/ 2>/dev/null || true
+        fi
     done
 fi
 
