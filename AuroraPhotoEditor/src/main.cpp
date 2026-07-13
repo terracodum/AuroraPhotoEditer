@@ -2,7 +2,9 @@
 #include <auroraapp.h>
 
 #include <QQmlContext>
+#include <QQmlEngine>
 #include "PipelineManager.h"
+#include "PipelineImageProvider.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +16,7 @@ int main(int argc, char *argv[])
 
     PipelineManager pipelineManager;
     view->rootContext()->setContextProperty("pipelineManager", &pipelineManager);
+    view->engine()->addImageProvider(QStringLiteral("pipeline"), new PipelineImageProvider(&pipelineManager));
 
     view->setSource(Aurora::Application::pathTo(QStringLiteral("qml/AuroraPhotoEditor.qml")));
     view->show();
