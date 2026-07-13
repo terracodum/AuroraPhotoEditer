@@ -1,5 +1,8 @@
 #include "PipelineManager.h"
 #include <QMutexLocker>
+#include <QUrl>
+#include <QImageReader>
+#include <QDebug>
 
 PipelineManager::PipelineManager(QObject* parent)
     : QObject(parent) {
@@ -7,6 +10,33 @@ PipelineManager::PipelineManager(QObject* parent)
 
 PipelineManager::~PipelineManager() {
 }
+
+bool PipelineManager::hasImage() const {
+    QMutexLocker locker(&m_mutex);
+    return !m_current.isNull();
+}
+
+bool PipelineManager::loadFromUri(const QString& uriString) {
+    QUrl url(uriString);
+    QString localFile = url.isLocalFile() ? url.toLocalFile() : uriString;
+
+    QImageReader reader(localFile);
+    reader.setAutoTransform(true); // Account for EXIF orientation
+
+    QImage image = reader.read();
+    if (image.isNull()) {
+        qWarning() << "Failed to read image:" << reader.errorString();
+        return false;
+    }
+
+    // Convert to normalized RGB format to prevent blue tint (RGB888)
+    image = image.convertToFormat(QImage::Format_RGB888);
+
+    setOriginalImage(image);
+    return true;
+}
+
+
 
 void PipelineManager::setOriginalImage(const QImage& image) {
     QImage prevCurrent;

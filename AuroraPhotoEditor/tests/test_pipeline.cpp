@@ -99,7 +99,7 @@ void TestPipelineManager::testApplyCommand() {
     QSignalSpy spyCurrent(&pm, &PipelineManager::currentImageChanged);
     QSignalSpy spyStack(&pm, &PipelineManager::commandStackChanged);
 
-    auto cmd = QSharedPointer<ImageEditorCommand>::create(FillColorCommand(Qt::blue));
+    auto cmd = QSharedPointer<FillColorCommand>::create(Qt::blue);
     QVERIFY(pm.applyCommand(cmd));
 
     QCOMPARE(spyCurrent.count(), 1);
@@ -119,8 +119,8 @@ void TestPipelineManager::testUndoLast() {
     img.fill(Qt::white);
     pm.setOriginalImage(img);
 
-    auto cmd1 = QSharedPointer<ImageEditorCommand>::create(FillColorCommand(Qt::blue));
-    auto cmd2 = QSharedPointer<ImageEditorCommand>::create(DrawPixelCommand(Qt::red));
+    auto cmd1 = QSharedPointer<FillColorCommand>::create(Qt::blue);
+    auto cmd2 = QSharedPointer<DrawPixelCommand>::create(Qt::red);
 
     pm.applyCommand(cmd1);
     pm.applyCommand(cmd2);
@@ -154,7 +154,7 @@ void TestPipelineManager::testResetToOriginal() {
     img.fill(Qt::white);
     pm.setOriginalImage(img);
 
-    auto cmd = QSharedPointer<ImageEditorCommand>::create(FillColorCommand(Qt::blue));
+    auto cmd = QSharedPointer<FillColorCommand>::create(Qt::blue);
     pm.applyCommand(cmd);
 
     QSignalSpy spyCurrent(&pm, &PipelineManager::currentImageChanged);
@@ -179,7 +179,7 @@ void TestPipelineManager::testThreadSafety() {
     std::vector<std::thread> threads;
 
     auto worker = [&pm, operationsPerThread]() {
-        auto cmd = QSharedPointer<ImageEditorCommand>::create(DrawPixelCommand(Qt::green));
+        auto cmd = QSharedPointer<DrawPixelCommand>::create(Qt::green);
         for (int i = 0; i < operationsPerThread; ++i) {
             pm.applyCommand(cmd);
             QImage img = pm.getCurrentImage();

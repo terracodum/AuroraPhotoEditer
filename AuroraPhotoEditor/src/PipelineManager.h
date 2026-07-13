@@ -9,10 +9,17 @@
 
 class PipelineManager : public QObject {
     Q_OBJECT
+    Q_PROPERTY(bool hasImage READ hasImage NOTIFY currentImageChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
     ~PipelineManager() override;
+
+    // Checks if a valid image is loaded. Thread-safe.
+    bool hasImage() const;
+
+    // Loads image from local file or URI, respects EXIF, converts to RGB888.
+    Q_INVOKABLE bool loadFromUri(const QString& uriString);
 
     // Sets the original image, resets the current image to this, and clears the command stack.
     void setOriginalImage(const QImage& image);
