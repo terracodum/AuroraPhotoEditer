@@ -31,7 +31,10 @@ BuildRequires:  ninja
 CONAN_LIB_DIR="%{_builddir}/conan-libs/"
 %{set_build_flags}
 rm -f "$CONAN_LIB_DIR/conanrun.sh"
-conan-install-if-modified --source-folder="%{_sourcedir}/.." --output-folder="$CONAN_LIB_DIR" -vwarning
+OLD_PATH=$PATH
+export PATH=$(echo $PATH | sed 's|/home/mersdk/.mb2/wrappers[^:]*:||g')
+conan-install-if-modified --source-folder="%{_sourcedir}/.." --output-folder="$CONAN_LIB_DIR" -vwarning --build=missing
+export PATH=$OLD_PATH
 PKG_CONFIG_PATH="$CONAN_LIB_DIR":$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH
 
