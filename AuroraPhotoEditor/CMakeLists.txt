@@ -6,10 +6,9 @@ find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
 include(FindPkgConfig)
 pkg_search_module(AURORA auroraapp REQUIRED)
 pkg_search_module(AURORA auroraapp_i18n REQUIRED)
-pkg_search_module(OPENCV opencv4)
-if(NOT OPENCV_FOUND)
-    pkg_search_module(OPENCV REQUIRED opencv)
-endif()
+pkg_search_module(OPENCV REQUIRED IMPORTED_TARGET opencv-core-imgcodecs opencv4 opencv)
+
+pkg_check_modules(ONNXRUNTIME REQUIRED IMPORTED_TARGET onnxruntime)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -40,14 +39,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     $<BUILD_INTERFACE:
     ${AURORA_INCLUDE_DIRS}
-    ${OPENCV_INCLUDE_DIRS}
 >)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Quick
     ${AURORA_LDFLAGS}
-    opencv_core
-    opencv_imgcodecs
-    onnxruntime
+    PkgConfig::OPENCV
+    PkgConfig::ONNXRUNTIME
 )
 
 install(TARGETS ${PROJECT_NAME}
