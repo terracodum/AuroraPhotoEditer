@@ -8,6 +8,7 @@ add_executable(test_pipeline
     ../src/PipelineManager.cpp
     ../src/BackgroundWorker.cpp
     ../src/MLProfiler.cpp
+    ../src/MLInferenceEngine.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE
@@ -18,6 +19,8 @@ target_link_libraries(test_pipeline PRIVATE
     Qt5::Core
     Qt5::Gui
     Qt5::Test
+    PkgConfig::ONNXRUNTIME
+    PkgConfig::OPENCV
 )
 
 add_test(NAME test_pipeline COMMAND test_pipeline)

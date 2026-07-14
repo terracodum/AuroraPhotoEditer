@@ -151,6 +151,10 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
     return false;
   }
 
+  if (m_current.isNull()) {
+    return false;
+  }
+
   QImage currentImage;
   {
     QMutexLocker locker(&m_mutex);
