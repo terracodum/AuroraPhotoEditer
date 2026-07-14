@@ -70,6 +70,7 @@ Page {
             fillMode: Image.PreserveAspectFit
             visible: pipelineManager.hasImage
             opacity: visible ? 1.0 : 0.0
+            cache: false // Prevent memory leaks from timestamp updates
 
             Behavior on opacity {
                 FadeAnimation { duration: 400 }
