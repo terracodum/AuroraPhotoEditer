@@ -58,6 +58,10 @@ public:
     // Clears the command stack and resets the current image to the original. Thread-safe.
     Q_INVOKABLE void resetToOriginal();
 
+    // Trigger commands from QML
+    Q_INVOKABLE void applyBackgroundRemoval();
+    Q_INVOKABLE void applyEnhance();
+
     // Returns the number of commands currently in the stack. Thread-safe.
     int commandCount() const;
 

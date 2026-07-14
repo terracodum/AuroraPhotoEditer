@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <optional>
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -28,19 +29,24 @@ private:
     std::unique_ptr<Ort::Env> env;
     std::unique_ptr<Ort::Session> session;
     
-    // Константы размера тензора
-    static constexpr int inputChannels = 3;
-    static constexpr int inputHeight = 256;
-    static constexpr int inputWidth = 256;
-    static constexpr int outputChannels = 1;
+    std::optional<Ort::MemoryInfo> memoryInfo;
+    std::optional<Ort::Value> inputTensor;
+    std::optional<Ort::Value> outputTensor;
+
+    bool isRMBG = false;
+    
+    size_t inputChannels = 3;
+    int64_t inputHeight = 256;
+    int inputWidth = 256;
+    int outputChannels = 1;
 
     // Переиспользуемые буферы для входных и выходных данных
     std::vector<float> inputTensorValues;
     std::vector<float> outputTensorValues;
     
     // Формы тензоров [batch, channels, height, width]
-    std::array<int64_t, 4> inputDims;
-    std::array<int64_t, 4> outputDims;
+    std::vector<int64_t> inputDims;
+    std::vector<int64_t> outputDims;
 
     // Имена входного и выходного узлов (для сессии)
     std::string inputName;

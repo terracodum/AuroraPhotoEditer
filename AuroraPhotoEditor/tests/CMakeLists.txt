@@ -10,16 +10,19 @@ add_executable(test_pipeline
     ../src/MLProfiler.cpp
     ../src/MLInferenceEngine.cpp
     ../src/EnhanceCommand.cpp
+    ../src/BackgroundCommand.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${AURORA_INCLUDE_DIRS}
 )
 
 target_link_libraries(test_pipeline PRIVATE
     Qt5::Core
     Qt5::Gui
     Qt5::Test
+    ${AURORA_LDFLAGS}
     PkgConfig::ONNXRUNTIME
     PkgConfig::OPENCV
 )
