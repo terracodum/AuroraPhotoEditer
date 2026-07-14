@@ -27,9 +27,11 @@ set(SOURCES
     src/main.cpp
     src/PipelineManager.cpp
     src/MLInferenceEngine.cpp
+    src/MLTensorProcessor.cpp
     src/BackgroundWorker.cpp
     src/MLProfiler.cpp
     src/EnhanceCommand.cpp
+    src/BackgroundCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -55,6 +57,9 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(DIRECTORY qml
+    DESTINATION share/${PROJECT_NAME}
+)
+install(DIRECTORY data
     DESTINATION share/${PROJECT_NAME}
 )
 
