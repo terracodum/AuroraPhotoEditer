@@ -290,7 +290,7 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
     auto bgCmd = qSharedPointerCast<BackgroundCommand>(m_commandStack.last().command);
     if (!bgCmd) return;
 
-    if (m_isProcessing) {
+    if (m_activeWorker) {
         m_updatePending = true;
         m_pendingMode = mode;
         m_pendingC1 = c1;
@@ -345,7 +345,6 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
                 }
                 
                 emit currentImageChanged(resultImage);
-                setIsProcessing(false);
                 m_activeWorker = nullptr;
                 worker->thread()->quit();
                 
@@ -360,7 +359,6 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
 
     connect(worker, &BackgroundWorker::canceled, this, [this, worker]() {
         if (m_activeWorker == worker) {
-            setIsProcessing(false);
             m_activeWorker = nullptr;
         }
         worker->thread()->quit();
@@ -370,7 +368,6 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
 
     m_activeWorker = worker;
-    setIsProcessing(true);
     thread->start();
 }
 void PipelineManager::applyEnhance() {

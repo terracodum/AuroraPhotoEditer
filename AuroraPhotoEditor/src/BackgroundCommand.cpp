@@ -126,13 +126,22 @@ QImage BackgroundCommand::execute(const QImage& input, MLProfiler* profiler) con
         gradient.setColorAt(1.0, m_color2);
         painter.fillRect(bgImage.rect(), gradient);
     } else if (m_mode == ModeBlur) {
-        bgImage = input.convertToFormat(QImage::Format_ARGB32);
         if (m_blurRadius > 0) {
-            // Apply gaussian blur to the background
-            // Ensure radius is odd and positive
-            int ksize = (m_blurRadius % 2 == 0) ? m_blurRadius + 1 : m_blurRadius;
-            cv::Mat bgMat(bgImage.height(), bgImage.width(), CV_8UC4, (void*)bgImage.bits(), bgImage.bytesPerLine());
-            cv::GaussianBlur(bgMat, bgMat, cv::Size(ksize, ksize), 0);
+            // Быстрое, но честное Гауссово размытие: уменьшаем, размываем, увеличиваем
+            int scaleFactor = 4; // 4 - оптимальный баланс качества и скорости для 12 Мп
+            QImage small = input.scaled(input.width() / scaleFactor, input.height() / scaleFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            small = small.convertToFormat(QImage::Format_ARGB32);
+            
+            int ksize = m_blurRadius / scaleFactor;
+            if (ksize > 0) {
+                if (ksize % 2 == 0) ksize++; // ksize должен быть нечетным
+                cv::Mat bgMat(small.height(), small.width(), CV_8UC4, (void*)small.bits(), small.bytesPerLine());
+                cv::GaussianBlur(bgMat, bgMat, cv::Size(ksize, ksize), 0);
+            }
+            bgImage = small.scaled(input.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            bgImage = bgImage.convertToFormat(QImage::Format_ARGB32);
+        } else {
+            bgImage = input.convertToFormat(QImage::Format_ARGB32);
         }
     }
 
