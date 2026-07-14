@@ -9,6 +9,7 @@ add_executable(test_pipeline
     ../src/BackgroundWorker.cpp
     ../src/MLProfiler.cpp
     ../src/MLInferenceEngine.cpp
+    ../src/EnhanceCommand.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE
