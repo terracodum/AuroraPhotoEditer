@@ -1,4 +1,5 @@
 #include "MLInferenceEngine.h"
+#include "MLProfiler.h"
 #include <iostream>
 
 MLInferenceEngine::MLInferenceEngine() {
@@ -34,4 +35,32 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
         std::cerr << "Exception loading model " << modelPath << ": " << e.what() << std::endl;
         return false;
     }
+}
+
+QImage MLInferenceEngine::prepareModelInput(const QImage& original, const QSize& tensorSize, MLProfiler* profiler) {
+    if (profiler) {
+        profiler->startPhase("Preprocessing");
+    }
+    
+    // Use Qt::FastTransformation for speed, this is usually acceptable for downsizing to ML tensors
+    QImage resized = original.scaled(tensorSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    
+    if (profiler) {
+        profiler->endPhase();
+    }
+    return resized;
+}
+
+QImage MLInferenceEngine::upscaleResult(const QImage& modelOutput, const QSize& originalSize, MLProfiler* profiler) {
+    if (profiler) {
+        profiler->startPhase("Postprocessing");
+    }
+    
+    // Use Qt::SmoothTransformation for high-quality upscaling of masks/layers back to original resolution
+    QImage upscaled = modelOutput.scaled(originalSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    
+    if (profiler) {
+        profiler->endPhase();
+    }
+    return upscaled;
 }
