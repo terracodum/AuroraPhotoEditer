@@ -29,6 +29,7 @@ set(SOURCES
     src/MLInferenceEngine.cpp
     src/BackgroundWorker.cpp
     src/MLProfiler.cpp
+    src/EnhanceCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
