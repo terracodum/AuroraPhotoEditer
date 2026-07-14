@@ -1,4 +1,5 @@
 #include "BackgroundWorker.h"
+#include "MLProfiler.h"
 
 BackgroundWorker::BackgroundWorker(QSharedPointer<ImageEditorCommand> command, const QImage& inputImage, QObject* parent)
     : QObject(parent)
@@ -20,7 +21,10 @@ void BackgroundWorker::process()
     }
 
     if (m_command) {
-        QImage result = m_command->execute(m_inputImage);
+        MLProfiler profiler;
+        QImage result = m_command->execute(m_inputImage, &profiler);
+        
+        profiler.dumpLog(m_command->name());
         
         if (m_isCanceled.load(std::memory_order_relaxed)) {
             emit canceled();
