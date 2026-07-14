@@ -57,6 +57,9 @@ install(TARGETS ${PROJECT_NAME}
 install(DIRECTORY qml
     DESTINATION share/${PROJECT_NAME}
 )
+install(DIRECTORY data
+    DESTINATION share/${PROJECT_NAME}
+)
 
 foreach(_file IN LISTS QmFiles)
     get_filename_component(_filename "${_file}" NAME)
