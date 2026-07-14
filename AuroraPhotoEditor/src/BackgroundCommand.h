@@ -11,7 +11,6 @@ public:
         ModeGradient,
         ModeBlur
     };
-
     BackgroundCommand();
     ~BackgroundCommand() override;
 
@@ -31,4 +30,6 @@ private:
 
     mutable QImage m_cachedInput;
     mutable QImage m_cachedMask;
+    mutable MLInferenceEngine engine;
+    mutable bool isModelLoaded = false;
 };

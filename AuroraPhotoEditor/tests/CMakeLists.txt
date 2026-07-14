@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Core Gui Test Concurrent REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Test Quick Concurrent REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -9,6 +9,7 @@ add_executable(test_pipeline
     ../src/BackgroundWorker.cpp
     ../src/MLProfiler.cpp
     ../src/MLInferenceEngine.cpp
+    ../src/MLTensorProcessor.cpp
     ../src/EnhanceCommand.cpp
     ../src/BackgroundCommand.cpp
 )
@@ -23,6 +24,7 @@ target_link_libraries(test_pipeline PRIVATE
     Qt5::Gui
     Qt5::Test
     Qt5::Concurrent
+    Qt5::Quick
     ${AURORA_LDFLAGS}
     PkgConfig::ONNXRUNTIME
     PkgConfig::OPENCV

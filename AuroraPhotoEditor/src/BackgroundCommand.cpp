@@ -138,7 +138,6 @@ QImage BackgroundCommand::execute(const QImage& input, MLProfiler* profiler) con
 
     // Многопоточное смешивание
     QImage resultImage = blendTwoImages(input, bgImage, mask);
-
     if (profiler) profiler->endPhase();
 
     return resultImage;

@@ -27,6 +27,7 @@ set(SOURCES
     src/main.cpp
     src/PipelineManager.cpp
     src/MLInferenceEngine.cpp
+    src/MLTensorProcessor.cpp
     src/BackgroundWorker.cpp
     src/MLProfiler.cpp
     src/EnhanceCommand.cpp
