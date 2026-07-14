@@ -1,5 +1,7 @@
 #include "PipelineManager.h"
 #include "BackgroundWorker.h"
+#include "BackgroundCommand.h"
+#include "EnhanceCommand.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -255,6 +257,14 @@ void PipelineManager::resetToOriginal() {
     emit currentImageChanged(newCurrent);
     emit commandStackChanged();
   }
+}
+
+void PipelineManager::applyBackgroundRemoval() {
+    applyCommand(QSharedPointer<BackgroundCommand>::create());
+}
+
+void PipelineManager::applyEnhance() {
+    applyCommand(QSharedPointer<EnhanceCommand>::create());
 }
 
 int PipelineManager::commandCount() const {

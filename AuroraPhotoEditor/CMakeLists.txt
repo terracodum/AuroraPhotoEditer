@@ -30,6 +30,7 @@ set(SOURCES
     src/BackgroundWorker.cpp
     src/MLProfiler.cpp
     src/EnhanceCommand.cpp
+    src/BackgroundCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
