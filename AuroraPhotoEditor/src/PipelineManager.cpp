@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QImageReader>
 #include <QMetaObject>
 #include <QMutexLocker>
@@ -21,8 +22,14 @@ void ExportWorker::exportImage(const QImage &image) {
   }
 
   QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-  QString fileName = QString("AuroraPhotoEditor_%1.jpg").arg(timestamp);
-  QString filePath = dir.absoluteFilePath(fileName);
+  QString filePath = dir.absoluteFilePath(
+      QString("AuroraPhotoEditor_%1.jpg").arg(timestamp));
+
+  // Avoid silently overwriting an existing file (two saves within one second).
+  for (int i = 1; QFileInfo::exists(filePath); ++i) {
+    filePath = dir.absoluteFilePath(
+        QString("AuroraPhotoEditor_%1_%2.jpg").arg(timestamp).arg(i));
+  }
 
   bool success = image.save(filePath, "JPEG", 95);
   emit exportCompleted(success, filePath);
@@ -78,6 +85,17 @@ bool PipelineManager::loadFromUri(const QString &uriString) {
   QImageReader reader(localFile);
   reader.setAutoTransform(true); // Account for EXIF orientation
 
+  // Guard against decompression bombs: reject absurd dimensions before
+  // allocating. reader.size() reads only the header.
+  const QSize dims = reader.size();
+  if (dims.isValid()) {
+    const qint64 maxPixels = 64LL * 1024 * 1024; // 64 megapixels
+    if (static_cast<qint64>(dims.width()) * dims.height() > maxPixels) {
+      qWarning() << "Refusing to load oversized image:" << dims;
+      return false;
+    }
+  }
+
   QImage image = reader.read();
   if (image.isNull()) {
     qWarning() << "Failed to read image:" << reader.errorString();
@@ -92,8 +110,6 @@ bool PipelineManager::loadFromUri(const QString &uriString) {
 }
 
 void PipelineManager::setOriginalImage(const QImage &image) {
-  QImage prevCurrent;
-  QImage prevOriginal;
   bool currentChanged = false;
   bool originalChanged = false;
   bool stackChanged = false;
@@ -102,12 +118,10 @@ void PipelineManager::setOriginalImage(const QImage &image) {
     QMutexLocker locker(&m_mutex);
     if (m_original != image) {
       m_original = image;
-      prevOriginal = m_original;
       originalChanged = true;
     }
     if (m_current != image) {
       m_current = image;
-      prevCurrent = m_current;
       currentChanged = true;
     }
     if (!m_commandStack.isEmpty()) {
@@ -116,11 +130,12 @@ void PipelineManager::setOriginalImage(const QImage &image) {
     }
   }
 
+  // Signals carry the NEW image, matching applyCommand/undoLast/resetToOriginal.
   if (originalChanged) {
-    emit originalImageChanged(prevOriginal);
+    emit originalImageChanged(image);
   }
   if (currentChanged) {
-    emit currentImageChanged(prevCurrent);
+    emit currentImageChanged(image);
   }
   if (stackChanged) {
     emit commandStackChanged();
@@ -151,20 +166,22 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
     return false;
   }
 
-  if (m_current.isNull()) {
-    return false;
-  }
-
   QImage currentImage;
   {
     QMutexLocker locker(&m_mutex);
+    if (m_current.isNull()) {
+      return false;
+    }
     currentImage = m_current;
   }
 
   if (m_activeWorker) {
-    m_activeWorker->cancel();
-    // Disconnect to avoid unwanted success/canceled handling
+    // Drop our state handlers first, then cancel. The worker->thread quit
+    // connections below are independent of `this`, so the superseded thread
+    // still finishes and cleans itself up (no leaked QThread/worker).
     disconnect(m_activeWorker, nullptr, this, nullptr);
+    m_activeWorker->cancel();
+    m_activeWorker = nullptr;
   }
 
   QThread *thread = new QThread();
@@ -172,6 +189,11 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
   worker->moveToThread(thread);
 
   connect(thread, &QThread::started, worker, &BackgroundWorker::process);
+
+  // Thread lifecycle: quit on completion regardless of the state handlers,
+  // so a superseded worker still tears its thread down.
+  connect(worker, &BackgroundWorker::success, thread, &QThread::quit);
+  connect(worker, &BackgroundWorker::canceled, thread, &QThread::quit);
 
   connect(worker, &BackgroundWorker::success, this,
           [this, worker, command](const QImage &resultImage) {
@@ -189,7 +211,6 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
 
             setIsProcessing(false);
             m_activeWorker = nullptr;
-            worker->thread()->quit();
           });
 
   connect(worker, &BackgroundWorker::canceled, this, [this, worker]() {
@@ -197,7 +218,6 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
       setIsProcessing(false);
       m_activeWorker = nullptr;
     }
-    worker->thread()->quit();
   });
 
   // Memory management
