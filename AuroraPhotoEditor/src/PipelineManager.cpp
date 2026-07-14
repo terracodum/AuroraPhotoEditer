@@ -45,8 +45,25 @@ PipelineManager::PipelineManager(QObject *parent) : QObject(parent) {
 }
 
 PipelineManager::~PipelineManager() {
+  if (m_activeWorker) {
+    QThread *workerThread = m_activeWorker->thread();
+    m_activeWorker->cancel();
+    if (workerThread) {
+      workerThread->requestInterruption();
+      workerThread->quit();
+      if (!workerThread->wait(3000)) {
+          workerThread->terminate();
+          workerThread->wait();
+      }
+    }
+  }
+
+  m_exportThread.requestInterruption();
   m_exportThread.quit();
-  m_exportThread.wait();
+  if (!m_exportThread.wait(3000)) {
+      m_exportThread.terminate();
+      m_exportThread.wait();
+  }
 }
 
 bool PipelineManager::hasImage() const {
