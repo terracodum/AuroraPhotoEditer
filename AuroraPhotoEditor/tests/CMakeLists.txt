@@ -7,6 +7,7 @@ add_executable(test_pipeline
     test_pipeline.cpp
     ../src/PipelineManager.cpp
     ../src/BackgroundWorker.cpp
+    ../src/MLProfiler.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE

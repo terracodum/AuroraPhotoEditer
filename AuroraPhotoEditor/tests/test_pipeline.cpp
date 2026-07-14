@@ -14,7 +14,8 @@ class FillColorCommand : public ImageEditorCommand {
 public:
     explicit FillColorCommand(const QColor& color) : m_color(color) {}
 
-    QImage execute(const QImage& input) const override {
+    QImage execute(const QImage& input, MLProfiler* profiler = nullptr) const override {
+        Q_UNUSED(profiler);
         QImage result = input.copy();
         result.fill(m_color);
         return result;
@@ -33,7 +34,8 @@ class DrawPixelCommand : public ImageEditorCommand {
 public:
     explicit DrawPixelCommand(const QColor& color) : m_color(color) {}
 
-    QImage execute(const QImage& input) const override {
+    QImage execute(const QImage& input, MLProfiler* profiler = nullptr) const override {
+        Q_UNUSED(profiler);
         QImage result = input.copy();
         if (!result.isNull()) {
             result.setPixelColor(0, 0, m_color);

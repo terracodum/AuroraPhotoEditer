@@ -28,6 +28,7 @@ set(SOURCES
     src/PipelineManager.cpp
     src/MLInferenceEngine.cpp
     src/BackgroundWorker.cpp
+    src/MLProfiler.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
