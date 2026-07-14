@@ -99,6 +99,13 @@ Page {
                 FadeAnimation { duration: 400 }
             }
         }
+        
+        BusyIndicator {
+            anchors.centerIn: parent
+            size: BusyIndicatorSize.Large
+            running: pipelineManager.isProcessing
+            visible: pipelineManager.isProcessing
+        }
     }
 
     DockedPanel {
