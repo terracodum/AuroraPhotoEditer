@@ -3,12 +3,47 @@
 #include <QUrl>
 #include <QImageReader>
 #include <QDebug>
+#include <QThread>
+#include <QStandardPaths>
+#include <QDir>
+#include <QDateTime>
+#include <QMetaObject>
+
+ExportWorker::ExportWorker(QObject* parent) : QObject(parent) {
+}
+
+void ExportWorker::exportImage(const QImage& image) {
+    QString picturesLocation = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    QDir dir(picturesLocation);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+
+    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+    QString fileName = QString("AuroraPhotoEditor_%1.jpg").arg(timestamp);
+    QString filePath = dir.absoluteFilePath(fileName);
+
+    bool success = image.save(filePath, "JPEG", 95);
+    emit exportCompleted(success, filePath);
+}
 
 PipelineManager::PipelineManager(QObject* parent)
     : QObject(parent) {
+    
+    m_exportWorker = new ExportWorker();
+    m_exportWorker->moveToThread(&m_exportThread);
+
+    connect(&m_exportThread, &QThread::finished, m_exportWorker, &QObject::deleteLater);
+    
+    connect(this, &PipelineManager::exportRequested, m_exportWorker, &ExportWorker::exportImage);
+    connect(m_exportWorker, &ExportWorker::exportCompleted, this, &PipelineManager::exportCompleted);
+
+    m_exportThread.start();
 }
 
 PipelineManager::~PipelineManager() {
+    m_exportThread.quit();
+    m_exportThread.wait();
 }
 
 bool PipelineManager::hasImage() const {
@@ -151,4 +186,14 @@ void PipelineManager::resetToOriginal() {
 int PipelineManager::commandCount() const {
     QMutexLocker locker(&m_mutex);
     return m_commandStack.size();
+}
+
+void PipelineManager::exportImage() {
+    QImage imageToSave = getCurrentImage();
+    if (imageToSave.isNull()) {
+        emit exportCompleted(false, "");
+        return;
+    }
+    
+    emit exportRequested(imageToSave);
 }

@@ -5,7 +5,20 @@
 #include <QList>
 #include <QSharedPointer>
 #include <QMutex>
+#include <QThread>
 #include "ImageEditorCommand.h"
+
+class ExportWorker : public QObject {
+    Q_OBJECT
+public:
+    explicit ExportWorker(QObject* parent = nullptr);
+
+public slots:
+    void exportImage(const QImage& image);
+
+signals:
+    void exportCompleted(bool success, const QString& filePath);
+};
 
 class PipelineManager : public QObject {
     Q_OBJECT
@@ -43,7 +56,11 @@ public:
     // Returns the number of commands currently in the stack. Thread-safe.
     int commandCount() const;
 
+    // Asynchronously exports the current image to PicturesLocation
+    Q_INVOKABLE void exportImage();
+
 signals:
+    void exportRequested(const QImage& image);
     // Emitted when the working image is updated.
     void currentImageChanged(const QImage& image);
 
@@ -52,6 +69,9 @@ signals:
 
     // Emitted when commands are added or removed from the stack.
     void commandStackChanged();
+
+    // Emitted when the image export completes.
+    void exportCompleted(bool success, const QString& filePath);
 
 private:
     struct StackElement {
@@ -63,4 +83,7 @@ private:
     QImage m_original;
     QImage m_current;
     QList<StackElement> m_commandStack;
+
+    ExportWorker* m_exportWorker;
+    QThread m_exportThread;
 };

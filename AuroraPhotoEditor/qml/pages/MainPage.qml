@@ -29,6 +29,11 @@ Page {
 
         PullDownMenu {
             MenuItem {
+                text: qsTr("Export Image")
+                visible: pipelineManager.hasImage
+                onClicked: pipelineManager.exportImage()
+            }
+            MenuItem {
                 text: qsTr("Select Photo")
                 onClicked: pageStack.push(imagePickerComponent)
             }
@@ -85,6 +90,14 @@ Page {
                 selectedImage.source = "image://pipeline/current?t=" + Date.now()
             } else {
                 selectedImage.source = ""
+            }
+        }
+        
+        onExportCompleted: {
+            if (success) {
+                pageStack.push(Qt.resolvedUrl("NoticePage.qml"), { "message": qsTr("Image successfully saved to:\n") + filePath })
+            } else {
+                pageStack.push(Qt.resolvedUrl("NoticePage.qml"), { "message": qsTr("Failed to save image") })
             }
         }
     }
