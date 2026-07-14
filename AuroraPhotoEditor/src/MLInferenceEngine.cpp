@@ -1,5 +1,6 @@
 #include "MLInferenceEngine.h"
 #include "MLProfiler.h"
+#include "MLTensorProcessor.h"
 #include <iostream>
 #include <cmath>
 #include <QPainter>
@@ -79,7 +80,7 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
             if (inputHeight < 0) inputHeight = 256;
             if (inputWidth < 0) inputWidth = 256;
         }
-        inputDims = {1, inputChannels, inputHeight, inputWidth};
+        inputDims = {1, static_cast<int64_t>(inputChannels), static_cast<int64_t>(inputHeight), static_cast<int64_t>(inputWidth)};
         
         auto output_name_alloc = session->GetOutputNameAllocated(best_output_idx, allocator);
         outputName = output_name_alloc.get();
@@ -109,17 +110,6 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
         std::cout << "Loaded model. Input dims: " << inputWidth << "x" << inputHeight 
                   << " Output elements: " << outputTensorSize << std::endl;
 
-        inputTensorValues.assign(inputTensorSize, 0.0f);
-        outputTensorValues.assign(outputTensorSize, 0.0f);
-        
-        inputTensor.emplace(Ort::Value::CreateTensor<float>(
-            *memoryInfo, inputTensorValues.data(), inputTensorValues.size(),
-            inputDims.data(), inputDims.size()));
-            
-        outputTensor.emplace(Ort::Value::CreateTensor<float>(
-            *memoryInfo, outputTensorValues.data(), outputTensorValues.size(),
-            outputDims.data(), outputDims.size()));
-
         return true;
     } catch (const Ort::Exception& e) {
         std::cerr << "Exception loading model " << modelPath << ": " << e.what() << std::endl;
@@ -128,7 +118,7 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
 }
 
 QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profiler) {
-    if (!session) {
+    if (!session || !memoryInfo) {
         std::cerr << "Session not initialized!" << std::endl;
         return QImage();
     }
@@ -136,29 +126,10 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
     // 1. Препроцессинг
     if (profiler) profiler->startPhase("Preprocessing");
     
-    QImage resized = original.scaled(inputWidth, inputHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    if (resized.format() != QImage::Format_RGB888) {
-        resized = resized.convertToFormat(QImage::Format_RGB888);
-    }
-
-    // Заполнение входного тензора NCHW
-    float mean[] = {0.485f, 0.456f, 0.406f};
-    float std[] = {0.229f, 0.224f, 0.225f};
-    
-    if (inputWidth >= 1024) { // RMBG-1.4 usually uses 1024x1024
-        mean[0] = 0.5f; mean[1] = 0.5f; mean[2] = 0.5f;
-        std[0] = 1.0f; std[1] = 1.0f; std[2] = 1.0f;
-    }
-
-    int imgSize = inputHeight * inputWidth;
-    for (int y = 0; y < inputHeight; ++y) {
-        const uchar* line = resized.scanLine(y);
-        for (int x = 0; x < inputWidth; ++x) {
-            int idx = y * inputWidth + x;
-            inputTensorValues[idx] = (line[x * 3] / 255.0f - mean[0]) / std[0];             // R
-            inputTensorValues[imgSize + idx] = (line[x * 3 + 1] / 255.0f - mean[1]) / std[1]; // G
-            inputTensorValues[imgSize * 2 + idx] = (line[x * 3 + 2] / 255.0f - mean[2]) / std[2]; // B
-        }
+    std::vector<float> inputTensorValues = MLTensorProcessor::processInput(original, inputWidth, inputHeight, isRMBG);
+    if (inputTensorValues.empty()) {
+        if (profiler) profiler->endPhase();
+        return QImage();
     }
 
     if (profiler) profiler->endPhase();
@@ -166,13 +137,25 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
     // 2. Инференс
     if (profiler) profiler->startPhase("Inference");
 
+    size_t outputTensorSize = 1;
+    for (auto d : outputDims) outputTensorSize *= d;
+    std::vector<float> outputTensorValues(outputTensorSize, 0.0f);
+
+    Ort::Value inputTensorLocal = Ort::Value::CreateTensor<float>(
+        *memoryInfo, inputTensorValues.data(), inputTensorValues.size(),
+        inputDims.data(), inputDims.size());
+        
+    Ort::Value outputTensorLocal = Ort::Value::CreateTensor<float>(
+        *memoryInfo, outputTensorValues.data(), outputTensorValues.size(),
+        outputDims.data(), outputDims.size());
+
     const char* inputNames[] = {inputName.c_str()};
     const char* outputNames[] = {outputName.c_str()};
 
     try {
         session->Run(Ort::RunOptions{nullptr}, 
-                     inputNames, &inputTensor.value(), 1, 
-                     outputNames, &outputTensor.value(), 1);
+                     inputNames, &inputTensorLocal, 1, 
+                     outputNames, &outputTensorLocal, 1);
     } catch (const Ort::Exception& e) {
         std::cerr << "ONNX Runtime Exception during Run: " << e.what() << std::endl;
         if (profiler) profiler->endPhase();
@@ -184,16 +167,6 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
     // 3. Постпроцессинг
     if (profiler) profiler->startPhase("Postprocessing");
 
-    float minVal = outputTensorValues[0];
-    float maxVal = outputTensorValues[0];
-    for (float val : outputTensorValues) {
-        if (val < minVal) minVal = val;
-        if (val > maxVal) maxVal = val;
-    }
-    
-    bool is255 = (minVal >= 0.0f && maxVal > 2.0f && maxVal <= 255.1f);
-    bool applySigmoid = (minVal < -1.0f || maxVal > 2.0f) && !is255;
-
     int outH = inputHeight;
     int outW = inputWidth;
     if (outputDims.size() >= 3) {
@@ -201,25 +174,7 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
         outH = outputDims[outputDims.size() - 2];
     }
 
-    QImage mask(outW, outH, QImage::Format_Grayscale8);
-    for (int y = 0; y < outH; ++y) {
-        uchar* line = mask.scanLine(y);
-        for (int x = 0; x < outW; ++x) {
-            int idx = y * outW + x;
-            float val = outputTensorValues[idx];
-            
-            if (is255) {
-                val /= 255.0f;
-            } else if (applySigmoid) {
-                val = 1.0f / (1.0f + std::exp(-val));
-            }
-            
-            if (val < 0.0f) val = 0.0f;
-            if (val > 1.0f) val = 1.0f;
-            
-            line[x] = static_cast<uchar>(val * 255.0f);
-        }
-    }
+    QImage mask = MLTensorProcessor::processOutput(outputTensorValues, outW, outH);
 
     if (profiler) profiler->endPhase();
 

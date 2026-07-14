@@ -59,7 +59,7 @@ compile_commands.json
 .antigravityignore
 
 # ONNX models
-models/*.onnx
+*.onnx
 
 # Aurora keys
 .auroraos-regular-keys/*

@@ -30,8 +30,6 @@ private:
     std::unique_ptr<Ort::Session> session;
     
     std::optional<Ort::MemoryInfo> memoryInfo;
-    std::optional<Ort::Value> inputTensor;
-    std::optional<Ort::Value> outputTensor;
 
     bool isRMBG = false;
     
@@ -39,10 +37,6 @@ private:
     int64_t inputHeight = 256;
     int inputWidth = 256;
     int outputChannels = 1;
-
-    // Переиспользуемые буферы для входных и выходных данных
-    std::vector<float> inputTensorValues;
-    std::vector<float> outputTensorValues;
     
     // Формы тензоров [batch, channels, height, width]
     std::vector<int64_t> inputDims;
