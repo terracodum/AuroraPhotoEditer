@@ -79,7 +79,7 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
             if (inputHeight < 0) inputHeight = 256;
             if (inputWidth < 0) inputWidth = 256;
         }
-        inputDims = {1, inputChannels, inputHeight, inputWidth};
+        inputDims = {1, static_cast<int64_t>(inputChannels), static_cast<int64_t>(inputHeight), static_cast<int64_t>(inputWidth)};
         
         auto output_name_alloc = session->GetOutputNameAllocated(best_output_idx, allocator);
         outputName = output_name_alloc.get();
