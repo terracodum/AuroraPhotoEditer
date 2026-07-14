@@ -188,6 +188,11 @@ int PipelineManager::commandCount() const {
     return m_commandStack.size();
 }
 
+bool PipelineManager::canUndo() const {
+    QMutexLocker locker(&m_mutex);
+    return !m_commandStack.isEmpty();
+}
+
 void PipelineManager::exportImage() {
     QImage imageToSave = getCurrentImage();
     if (imageToSave.isNull()) {
