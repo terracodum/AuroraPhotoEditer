@@ -4,6 +4,10 @@
 #include <QUrl>
 #include <QDebug>
 #include <QtConcurrent>
+#include <QPainter>
+#include <QLinearGradient>
+#include <QMutex>
+#include <memory>
 #include <opencv2/opencv.hpp>
 
 BackgroundCommand::BackgroundCommand() = default;
@@ -51,46 +55,86 @@ static QImage blendTwoImages(const QImage& fg, const QImage& bg, const QImage& m
     return result;
 }
 
+namespace {
+    std::unique_ptr<MLInferenceEngine> g_engine;
+    QMutex g_engineMutex;
+    bool g_isModelLoaded = false;
+}
+
 QImage BackgroundCommand::execute(const QImage& input, MLProfiler* profiler) const {
     if (input.isNull()) return input;
 
-    if (!isModelLoaded) {
-        if (profiler) profiler->startPhase("LoadModel");
+    QImage mask;
+
+    // Check if we can reuse the cached mask
+    if (m_cachedInput == input && !m_cachedMask.isNull()) {
+        mask = m_cachedMask;
+    } else {
+        QMutexLocker locker(&g_engineMutex);
+        if (!g_engine) {
+            g_engine = std::make_unique<MLInferenceEngine>();
+        }
         
-        QUrl modelUrl = Aurora::Application::pathTo(QStringLiteral("data/models/u2net.onnx"));
-        QString modelPathStr = modelUrl.isLocalFile() ? modelUrl.toLocalFile() : modelUrl.toString();
-        
-        bool success = engine.loadModel(modelPathStr.toStdString());
-        if (!success) {
-            qWarning() << "Failed to load model from" << modelPathStr;
+        if (!g_isModelLoaded) {
+            if (profiler) profiler->startPhase("LoadModel");
+            
+            QUrl modelUrl = Aurora::Application::pathTo(QStringLiteral("data/models/u2net.onnx"));
+            QString modelPathStr = modelUrl.isLocalFile() ? modelUrl.toLocalFile() : modelUrl.toString();
+            
+            bool success = g_engine->loadModel(modelPathStr.toStdString());
+            if (!success) {
+                qWarning() << "Failed to load model from" << modelPathStr;
+                if (profiler) profiler->endPhase();
+                return input;
+            }
+            g_isModelLoaded = true;
             if (profiler) profiler->endPhase();
+        }
+
+        // Run Inference
+        mask = g_engine->runInference(input, profiler);
+        if (mask.isNull()) {
+            qWarning() << "Inference returned a null mask";
             return input;
         }
-        isModelLoaded = true;
+
+        // Upscale the mask
+        mask = MLInferenceEngine::upscaleResult(mask, input.size(), profiler);
+
+        // Apply blur to mask edges for smoothing
+        if (profiler) profiler->startPhase("BlurMask");
+        cv::Mat maskMat(mask.height(), mask.width(), CV_8UC1, (void*)mask.bits(), mask.bytesPerLine());
+        cv::GaussianBlur(maskMat, maskMat, cv::Size(21, 21), 0);
         if (profiler) profiler->endPhase();
+
+        // Cache the result
+        m_cachedInput = input;
+        m_cachedMask = mask;
     }
-
-    // Run Inference
-    QImage mask = engine.runInference(input, profiler);
-    if (mask.isNull()) {
-        qWarning() << "Inference returned a null mask";
-        return input;
-    }
-
-    // Upscale the mask
-    mask = MLInferenceEngine::upscaleResult(mask, input.size(), profiler);
-
-    // Apply blur to mask edges for smoothing
-    if (profiler) profiler->startPhase("BlurMask");
-    cv::Mat maskMat(mask.height(), mask.width(), CV_8UC1, (void*)mask.bits(), mask.bytesPerLine());
-    cv::GaussianBlur(maskMat, maskMat, cv::Size(21, 21), 0);
-    if (profiler) profiler->endPhase();
 
     if (profiler) profiler->startPhase("ApplyMask");
     
-    // Создаем пустой прозрачный фон в качестве второго QImage
+    // Create the background image
     QImage bgImage(input.size(), QImage::Format_ARGB32);
-    bgImage.fill(Qt::transparent);
+    
+    if (m_mode == ModeColor) {
+        bgImage.fill(m_color1);
+    } else if (m_mode == ModeGradient) {
+        QPainter painter(&bgImage);
+        QLinearGradient gradient(0, 0, bgImage.width(), bgImage.height());
+        gradient.setColorAt(0.0, m_color1);
+        gradient.setColorAt(1.0, m_color2);
+        painter.fillRect(bgImage.rect(), gradient);
+    } else if (m_mode == ModeBlur) {
+        bgImage = input.convertToFormat(QImage::Format_ARGB32);
+        if (m_blurRadius > 0) {
+            // Apply gaussian blur to the background
+            // Ensure radius is odd and positive
+            int ksize = (m_blurRadius % 2 == 0) ? m_blurRadius + 1 : m_blurRadius;
+            cv::Mat bgMat(bgImage.height(), bgImage.width(), CV_8UC4, (void*)bgImage.bits(), bgImage.bytesPerLine());
+            cv::GaussianBlur(bgMat, bgMat, cv::Size(ksize, ksize), 0);
+        }
+    }
 
     // Многопоточное смешивание
     QImage resultImage = blendTwoImages(input, bgImage, mask);

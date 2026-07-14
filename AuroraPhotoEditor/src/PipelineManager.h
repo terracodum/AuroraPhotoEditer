@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QImage>
+#include <QColor>
 #include <QList>
 #include <QSharedPointer>
 #include <QMutex>
@@ -60,6 +61,7 @@ public:
 
     // Trigger commands from QML
     Q_INVOKABLE void applyBackgroundRemoval();
+    Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius);
     Q_INVOKABLE void applyEnhance();
 
     // Returns the number of commands currently in the stack. Thread-safe.
@@ -106,4 +108,10 @@ private:
 
     class BackgroundWorker* m_activeWorker = nullptr;
     bool m_isProcessing = false;
+
+    bool m_updatePending = false;
+    int m_pendingMode = 0;
+    QColor m_pendingC1;
+    QColor m_pendingC2;
+    int m_pendingBlur = 0;
 };
