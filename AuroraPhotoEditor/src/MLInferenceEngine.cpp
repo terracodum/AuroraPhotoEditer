@@ -30,7 +30,7 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
 
     try {
         Ort::SessionOptions sessionOptions;
-        sessionOptions.SetIntraOpNumThreads(1);
+        sessionOptions.SetIntraOpNumThreads(4);
         sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
 
         // Create the session
