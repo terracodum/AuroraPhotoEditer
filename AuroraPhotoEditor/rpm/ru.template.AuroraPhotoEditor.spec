@@ -70,6 +70,7 @@ fi
 
 %defattr(644,root,root,-)
 %{_datadir}/%{name}/qml
+%{_datadir}/%{name}/data
 %{_datadir}/%{name}/translations
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
