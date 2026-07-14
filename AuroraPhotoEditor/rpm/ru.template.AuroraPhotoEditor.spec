@@ -12,12 +12,14 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5Test)
+BuildRequires:  ninja
 
 %define __provides_exclude_from ^%{_datadir}/%{name}/lib/.*$
 %define __requires_exclude_from ^%{_datadir}/%{name}/lib/.*$
 %define __provides_exclude ^(libabsl.*|libcpuinfo.*|libcrypto.*|libcurl.*|libdate.*|libflatbuffers.*|libnsync.*|libonnx.*|libonnxruntime.*|libprotobuf.*|libre2.*|libssl.*|libz.*|libatomic.*|libXNNPACK.*|libpthreadpool.*|libopencv.*|libjpeg.*|libpng.*)$
 %define __requires_exclude ^(libabsl.*|libcpuinfo.*|libcrypto.*|libcurl.*|libdate.*|libflatbuffers.*|libnsync.*|libonnx.*|libonnxruntime.*|libprotobuf.*|libre2.*|libssl.*|libz.*|libatomic.*|libXNNPACK.*|libpthreadpool.*|libopencv.*|libjpeg.*|libpng.*)$
 %define _cmake_skip_rpath %{nil}
+%{expand:%(bash %{_sourcedir}/load-conan.sh)}
 
 %description
 Короткое описание моего приложения для ОС Аврора
@@ -26,38 +28,16 @@ BuildRequires:  pkgconfig(Qt5Test)
 %autosetup
 
 %build
-ORIG_PATH=$PATH
-export PATH=$(echo $PATH | sed 's|/home/mersdk/.mb2/wrappers[^:]*:||g')
-export PATH="/home/mersdk/.cache/AuroraTools/5/conan/2.22.0/x86_64/bin:$PATH"
-CONAN_LIB_DIR="%{_builddir}/conan-libs/"
-%{set_build_flags}
-mkdir -p "$CONAN_LIB_DIR"
-conan profile detect || true
-conan install %{_sourcedir}/.. --output-folder="$CONAN_LIB_DIR" --build=missing -pr:h %{_arch} -pr:b default -s:h compiler.version=8 -o:h onnxruntime/*:shared=True -o:h onnxruntime/*:with_xnnpack=True -o:h onnxruntime/*:with_cuda=False
-export PATH=$ORIG_PATH
-PKG_CONFIG_PATH="$CONAN_LIB_DIR":$PKG_CONFIG_PATH
-export PKG_CONFIG_PATH
-
-%cmake -GNinja -DCMAKE_SYSTEM_PROCESSOR=%{_arch}
+OLD_PATH=$PATH
+export PATH=/usr/bin:$PATH
+%conan_install
+export PATH=$OLD_PATH
+%conan_cmake -GNinja %{_sourcedir}/..
 %ninja_build
 
 %install
 %ninja_install
-
-SHARED_LIBRARIES="%{buildroot}/%{_datadir}/%{name}/lib"
-mkdir -p "$SHARED_LIBRARIES"
-
-CONAN_LIB_DIR="%{_builddir}/conan-libs/"
-ALL_LIBDIRS=$(export PKG_CONFIG_PATH="$CONAN_LIB_DIR"; for pc in "$CONAN_LIB_DIR"/*.pc; do [ -f "$pc" ] && pkg-config --variable=libdir "$(basename "$pc" .pc)" 2>/dev/null; done | sort -u || true)
-EXECUTABLE="%{buildroot}/%{_bindir}/%{name}"
-
-if [ -n "$ALL_LIBDIRS" ]; then
-    for dir in $ALL_LIBDIRS; do
-        if [ -d "$dir" ]; then
-            cp -d "$dir"/*.so* "$SHARED_LIBRARIES"/ 2>/dev/null || true
-        fi
-    done
-fi
+%conan_deploy_libraries
 
 %files
 %defattr(-,root,root,-)

@@ -15,10 +15,12 @@ QImage EnhanceCommand::execute(const QImage& input, MLProfiler* profiler) const 
 
     if (profiler) profiler->startPhase("FormatConversion_QImageToMat");
 
-    // Convert QImage to cv::Mat (RGB)
+    // Convert QImage to cv::Mat (RGB). image is a fresh detached copy, so
+    // bits() hands back writable memory without a deep copy and avoids a
+    // const_cast; cvtColor only reads it anyway.
     QImage image = input.convertToFormat(QImage::Format_RGB888);
     cv::Mat rgbMat(image.height(), image.width(), CV_8UC3,
-                   (void*)image.constBits(), image.bytesPerLine());
+                   image.bits(), image.bytesPerLine());
 
     if (profiler) profiler->startPhase("LAB_Conversion_and_CLAHE");
 
