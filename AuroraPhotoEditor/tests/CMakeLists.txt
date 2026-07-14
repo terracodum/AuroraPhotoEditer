@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Core Gui Test REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Test Concurrent REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -22,6 +22,7 @@ target_link_libraries(test_pipeline PRIVATE
     Qt5::Core
     Qt5::Gui
     Qt5::Test
+    Qt5::Concurrent
     ${AURORA_LDFLAGS}
     PkgConfig::ONNXRUNTIME
     PkgConfig::OPENCV
