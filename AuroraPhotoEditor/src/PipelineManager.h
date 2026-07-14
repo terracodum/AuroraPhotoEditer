@@ -25,12 +25,17 @@ class PipelineManager : public QObject {
     Q_PROPERTY(bool hasImage READ hasImage NOTIFY currentImageChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY commandStackChanged)
 
+    Q_PROPERTY(bool isProcessing READ isProcessing NOTIFY isProcessingChanged)
+
 public:
     explicit PipelineManager(QObject* parent = nullptr);
     ~PipelineManager() override;
 
     // Checks if a valid image is loaded. Thread-safe.
     bool hasImage() const;
+
+    // Returns whether background processing is active
+    bool isProcessing() const;
 
     // Loads image from local file or URI, respects EXIF, converts to RGB888.
     Q_INVOKABLE bool loadFromUri(const QString& uriString);
@@ -44,8 +49,7 @@ public:
     // Returns a copy of the original image. Thread-safe.
     QImage getOriginalImage() const;
 
-    // Executes the command on the current image, adds it to the command stack,
-    // and updates the working image. Thread-safe.
+    // Asynchronously executes the command on the current image.
     bool applyCommand(QSharedPointer<ImageEditorCommand> command);
 
     // Reverts the last applied command, restoring the previous image state. Thread-safe.
@@ -77,7 +81,12 @@ signals:
     // Emitted when the image export completes.
     void exportCompleted(bool success, const QString& filePath);
 
+    // Emitted when processing state changes
+    void isProcessingChanged();
+
 private:
+    void setIsProcessing(bool processing);
+
     struct StackElement {
         QSharedPointer<ImageEditorCommand> command;
         QImage resultImage;
@@ -90,4 +99,7 @@ private:
 
     ExportWorker* m_exportWorker;
     QThread m_exportThread;
+
+    class BackgroundWorker* m_activeWorker = nullptr;
+    bool m_isProcessing = false;
 };

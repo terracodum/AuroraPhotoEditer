@@ -6,6 +6,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_executable(test_pipeline
     test_pipeline.cpp
     ../src/PipelineManager.cpp
+    ../src/BackgroundWorker.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE
