@@ -23,8 +23,8 @@ target_link_libraries(test_pipeline PRIVATE
     Qt5::Core
     Qt5::Gui
     Qt5::Test
-    Qt5::Quick
     Qt5::Concurrent
+    Qt5::Quick
     ${AURORA_LDFLAGS}
     PkgConfig::ONNXRUNTIME
     PkgConfig::OPENCV

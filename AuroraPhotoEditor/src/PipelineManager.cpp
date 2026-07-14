@@ -283,6 +283,93 @@ void PipelineManager::applyBackgroundRemoval() {
     applyCommand(QSharedPointer<BackgroundCommand>::create());
 }
 
+void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius) {
+    QMutexLocker locker(&m_mutex);
+    if (m_commandStack.isEmpty()) return;
+
+    auto bgCmd = qSharedPointerCast<BackgroundCommand>(m_commandStack.last().command);
+    if (!bgCmd) return;
+
+    if (m_activeWorker) {
+        m_updatePending = true;
+        m_pendingMode = mode;
+        m_pendingC1 = c1;
+        m_pendingC2 = c2;
+        m_pendingBlur = blurRadius;
+        return;
+    }
+
+    m_updatePending = false;
+
+    bgCmd->setMode(static_cast<BackgroundCommand::BackgroundMode>(mode));
+    bgCmd->setColor1(c1);
+    bgCmd->setColor2(c2);
+    bgCmd->setBlurRadius(blurRadius);
+
+    QImage inputImage = m_commandStack.size() > 1 ? m_commandStack[m_commandStack.size() - 2].resultImage : m_original;
+
+    if (m_activeWorker) {
+        m_activeWorker->cancel();
+        disconnect(m_activeWorker, nullptr, this, nullptr);
+    }
+
+    QThread *thread = new QThread();
+    BackgroundWorker *worker = new BackgroundWorker(bgCmd, inputImage);
+    worker->moveToThread(thread);
+
+    connect(thread, &QThread::started, worker, &BackgroundWorker::process);
+
+    connect(worker, &BackgroundWorker::success, this,
+            [this, worker, bgCmd](const QImage &resultImage) {
+                if (m_activeWorker != worker) return;
+                
+                int nextMode = 0;
+                QColor nextC1, nextC2;
+                int nextBlur = 0;
+                bool hasPending = false;
+
+                {
+                    QMutexLocker locker(&m_mutex);
+                    if (!m_commandStack.isEmpty() && m_commandStack.last().command == bgCmd) {
+                        m_commandStack.last().resultImage = resultImage;
+                        m_current = resultImage;
+                    }
+                    hasPending = m_updatePending;
+                    if (hasPending) {
+                        nextMode = m_pendingMode;
+                        nextC1 = m_pendingC1;
+                        nextC2 = m_pendingC2;
+                        nextBlur = m_pendingBlur;
+                        m_updatePending = false;
+                    }
+                }
+                
+                emit currentImageChanged(resultImage);
+                m_activeWorker = nullptr;
+                worker->thread()->quit();
+                
+                if (hasPending) {
+                    QMetaObject::invokeMethod(this, "updateBackground", Qt::QueuedConnection,
+                                              Q_ARG(int, nextMode),
+                                              Q_ARG(QColor, nextC1),
+                                              Q_ARG(QColor, nextC2),
+                                              Q_ARG(int, nextBlur));
+                }
+            });
+
+    connect(worker, &BackgroundWorker::canceled, this, [this, worker]() {
+        if (m_activeWorker == worker) {
+            m_activeWorker = nullptr;
+        }
+        worker->thread()->quit();
+    });
+
+    connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+
+    m_activeWorker = worker;
+    thread->start();
+}
 void PipelineManager::applyEnhance() {
     applyCommand(QSharedPointer<EnhanceCommand>::create());
 }
