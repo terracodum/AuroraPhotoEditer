@@ -18,7 +18,7 @@ Page {
                 
                 IconButton {
                     objectName: "undoButton"
-                    icon.source: "image://theme/icon-m-undo"
+                    icon.source: "image://theme/icon-m-back"
                     enabled: pipelineManager.canUndo
                     onClicked: pipelineManager.undoLast()
                 }
@@ -34,11 +34,6 @@ Page {
                     visible: pipelineManager.hasImage
                     onClicked: pipelineManager.exportImage()
                 }
-                IconButton {
-                    objectName: "aboutButton"
-                    icon.source: "image://theme/icon-m-about"
-                    onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
-                }
             }
         ]
     }
@@ -53,6 +48,10 @@ Page {
             MenuItem {
                 text: qsTr("Select Photo")
                 onClicked: pageStack.push(imagePickerComponent)
+            }
+            MenuItem {
+                text: qsTr("About")
+                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
         }
 
@@ -120,18 +119,27 @@ Page {
             color: Theme.overlayBackgroundColor
 
             Row {
-                anchors.centerIn: parent
+                anchors.fill: parent
+                anchors.leftMargin: Theme.paddingMedium
+                anchors.rightMargin: Theme.paddingMedium
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingMedium
 
                 Button {
+                    width: (parent.width - Theme.paddingMedium * 2) / 3
+                    anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Фон")
-                    onClicked: console.log("Background selected")
+                    onClicked: pipelineManager.applyBackgroundRemoval()
                 }
                 Button {
+                    width: (parent.width - Theme.paddingMedium * 2) / 3
+                    anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Улучшение")
-                    onClicked: console.log("Enhance selected")
+                    onClicked: pipelineManager.applyEnhance()
                 }
                 Button {
+                    width: (parent.width - Theme.paddingMedium * 2) / 3
+                    anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Стиль")
                     onClicked: console.log("Style selected")
                 }
@@ -145,7 +153,7 @@ Page {
             if (pipelineManager.hasImage) {
                 selectedImage.source = "image://pipeline/current?t=" + Date.now()
             } else {
-                selectedImage.source = ""
+                selectedImage.source = undefined
             }
         }
         
