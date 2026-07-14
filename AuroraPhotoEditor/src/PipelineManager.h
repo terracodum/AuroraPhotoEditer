@@ -23,6 +23,7 @@ signals:
 class PipelineManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool hasImage READ hasImage NOTIFY currentImageChanged)
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY commandStackChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
@@ -48,13 +49,16 @@ public:
     bool applyCommand(QSharedPointer<ImageEditorCommand> command);
 
     // Reverts the last applied command, restoring the previous image state. Thread-safe.
-    bool undoLast();
+    Q_INVOKABLE bool undoLast();
 
     // Clears the command stack and resets the current image to the original. Thread-safe.
-    void resetToOriginal();
+    Q_INVOKABLE void resetToOriginal();
 
     // Returns the number of commands currently in the stack. Thread-safe.
     int commandCount() const;
+
+    // Returns whether there are any commands to undo.
+    bool canUndo() const;
 
     // Asynchronously exports the current image to PicturesLocation
     Q_INVOKABLE void exportImage();

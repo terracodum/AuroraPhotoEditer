@@ -12,11 +12,33 @@ Page {
         objectName: "pageHeader"
         title: qsTr("PhotoEditor")
         extraContent.children: [
-            IconButton {
-                objectName: "aboutButton"
-                icon.source: "image://theme/icon-m-about"
+            Row {
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
+                spacing: Theme.paddingSmall
+                
+                IconButton {
+                    objectName: "undoButton"
+                    icon.source: "image://theme/icon-m-undo"
+                    enabled: pipelineManager.canUndo
+                    onClicked: pipelineManager.undoLast()
+                }
+                IconButton {
+                    objectName: "resetButton"
+                    icon.source: "image://theme/icon-m-refresh"
+                    enabled: pipelineManager.canUndo
+                    onClicked: pipelineManager.resetToOriginal()
+                }
+                IconButton {
+                    objectName: "saveButton"
+                    icon.source: "image://theme/icon-m-save"
+                    visible: pipelineManager.hasImage
+                    onClicked: pipelineManager.exportImage()
+                }
+                IconButton {
+                    objectName: "aboutButton"
+                    icon.source: "image://theme/icon-m-about"
+                    onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
+                }
             }
         ]
     }
@@ -28,11 +50,6 @@ Page {
         clip: true
 
         PullDownMenu {
-            MenuItem {
-                text: qsTr("Export Image")
-                visible: pipelineManager.hasImage
-                onClicked: pipelineManager.exportImage()
-            }
             MenuItem {
                 text: qsTr("Select Photo")
                 onClicked: pageStack.push(imagePickerComponent)
@@ -72,6 +89,7 @@ Page {
             id: selectedImage
             anchors.fill: parent
             anchors.margins: Theme.paddingLarge
+            anchors.bottomMargin: toolsPanel.height + Theme.paddingLarge
             fillMode: Image.PreserveAspectFit
             visible: pipelineManager.hasImage
             opacity: visible ? 1.0 : 0.0
@@ -79,6 +97,37 @@ Page {
 
             Behavior on opacity {
                 FadeAnimation { duration: 400 }
+            }
+        }
+    }
+
+    DockedPanel {
+        id: toolsPanel
+        width: parent.width
+        height: Theme.itemSizeExtraLarge
+        dock: Dock.Bottom
+        open: pipelineManager.hasImage
+
+        Rectangle {
+            anchors.fill: parent
+            color: Theme.overlayBackgroundColor
+
+            Row {
+                anchors.centerIn: parent
+                spacing: Theme.paddingMedium
+
+                Button {
+                    text: qsTr("Фон")
+                    onClicked: console.log("Background selected")
+                }
+                Button {
+                    text: qsTr("Улучшение")
+                    onClicked: console.log("Enhance selected")
+                }
+                Button {
+                    text: qsTr("Стиль")
+                    onClicked: console.log("Style selected")
+                }
             }
         }
     }

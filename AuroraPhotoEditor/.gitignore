@@ -63,3 +63,5 @@ models/*.onnx
 
 # Aurora keys
 .auroraos-regular-keys/*
+
+rules.md
