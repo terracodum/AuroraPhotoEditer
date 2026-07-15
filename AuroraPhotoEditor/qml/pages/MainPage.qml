@@ -110,7 +110,7 @@ Page {
     DockedPanel {
         id: toolsPanel
         width: parent.width
-        height: Theme.itemSizeExtraLarge
+        height: pipelineManager.canUndo ? Theme.itemSizeExtraLarge * 2 : Theme.itemSizeExtraLarge
         dock: Dock.Bottom
         open: pipelineManager.hasImage
 
@@ -118,30 +118,51 @@ Page {
             anchors.fill: parent
             color: Theme.overlayBackgroundColor
 
-            Row {
+            Column {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.paddingMedium
-                anchors.rightMargin: Theme.paddingMedium
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.paddingMedium
+                spacing: Theme.paddingSmall
+                
+                Item {
+                    width: parent.width
+                    height: Theme.paddingMedium
+                }
 
-                Button {
-                    width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Фон")
-                    onClicked: pipelineManager.applyBackgroundRemoval()
+                Slider {
+                    width: parent.width
+                    label: qsTr("Сила фильтра")
+                    value: pipelineManager.filterStrength
+                    minimumValue: 0.0
+                    maximumValue: 1.0
+                    stepSize: 0.01
+                    valueText: Math.round(value * 100) + "%"
+                    onValueChanged: {
+                        if (pipelineManager.filterStrength !== value) {
+                            pipelineManager.filterStrength = value
+                        }
+                    }
+                    visible: pipelineManager.canUndo
                 }
-                Button {
-                    width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Улучшение")
-                    onClicked: pipelineManager.applyEnhance()
-                }
-                Button {
-                    width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Стиль")
-                    onClicked: pageStack.push(styleSelectionComponent)
+
+                Row {
+                    width: parent.width - Theme.paddingMedium * 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingMedium
+
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Фон")
+                        onClicked: pipelineManager.applyBackgroundRemoval()
+                    }
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Улучшение")
+                        onClicked: pipelineManager.applyEnhance()
+                    }
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Стиль")
+                        onClicked: pageStack.push(styleSelectionComponent)
+                    }
                 }
             }
         }

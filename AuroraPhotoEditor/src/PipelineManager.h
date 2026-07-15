@@ -27,6 +27,7 @@ class PipelineManager : public QObject {
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY commandStackChanged)
 
     Q_PROPERTY(bool isProcessing READ isProcessing NOTIFY isProcessingChanged)
+    Q_PROPERTY(qreal filterStrength READ filterStrength WRITE setFilterStrength NOTIFY filterStrengthChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
@@ -55,6 +56,9 @@ public:
 
     // Reverts the last applied command, restoring the previous image state. Thread-safe.
     Q_INVOKABLE bool undoLast();
+
+    qreal filterStrength() const { return m_filterStrength; }
+    void setFilterStrength(qreal strength);
 
     // Clears the command stack and resets the current image to the original. Thread-safe.
     Q_INVOKABLE void resetToOriginal();
@@ -93,8 +97,13 @@ signals:
     // Emitted when processing state changes
     void isProcessingChanged();
 
+    // Emitted when the filter strength changes
+    void filterStrengthChanged(qreal strength);
+
 private:
     void setIsProcessing(bool processing);
+    
+    QImage blendImages(const QImage& bottom, const QImage& top, qreal alpha) const;
 
     struct StackElement {
         QSharedPointer<ImageEditorCommand> command;
@@ -108,6 +117,8 @@ private:
 
     QVariantList m_availableStylesCache;
     bool m_stylesCached = false;
+
+    qreal m_filterStrength = 1.0;
 
     ExportWorker* m_exportWorker;
     QThread m_exportThread;
