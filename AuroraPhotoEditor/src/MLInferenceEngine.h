@@ -11,6 +11,8 @@
 #include <QImage>
 #include <QSize>
 
+#include "MLTensorProcessor.h"
+
 class MLProfiler;
 
 class MLInferenceEngine {
@@ -20,18 +22,33 @@ public:
 
     bool loadModel(const std::string& modelPath);
     
-    // Выполняет инференс на заданном изображении (возвращает маску 256x256)
+    void setNormalizationMode(MLTensorProcessor::NormalizationMode mode) { normMode = mode; }
+    
+    void setDynamicInputSize(const QSize& size) {
+        inputWidth = size.width();
+        inputHeight = size.height();
+        inputDims = {1, static_cast<int64_t>(inputChannels), static_cast<int64_t>(inputHeight), static_cast<int64_t>(inputWidth)};
+        if (outputDims.size() >= 4) {
+            outputDims[2] = inputHeight;
+            outputDims[3] = inputWidth;
+        }
+    }
+    
+    // Выполняет инференс на заданном изображении (возвращает маску 256x256 или RGB изображение)
     QImage runInference(const QImage& original, MLProfiler* profiler = nullptr);
 
     static QImage prepareModelInput(const QImage& original, const QSize& tensorSize, MLProfiler* profiler = nullptr);
     static QImage upscaleResult(const QImage& modelOutput, const QSize& originalSize, MLProfiler* profiler = nullptr);
+    
+    // Checks the ONNX graph for the number of output channels
+    static int getModelOutputChannels(const std::string& modelPath);
 private:
     std::unique_ptr<Ort::Env> env;
     std::unique_ptr<Ort::Session> session;
     
     std::optional<Ort::MemoryInfo> memoryInfo;
 
-    bool isRMBG = false;
+    MLTensorProcessor::NormalizationMode normMode = MLTensorProcessor::NormalizationMode::Standard;
     
     size_t inputChannels = 3;
     int64_t inputHeight = 256;

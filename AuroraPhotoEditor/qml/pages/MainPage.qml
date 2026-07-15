@@ -141,7 +141,7 @@ Page {
                     width: (parent.width - Theme.paddingMedium * 2) / 3
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Стиль")
-                    onClicked: console.log("Style selected")
+                    onClicked: pageStack.push(styleSelectionComponent)
                 }
             }
         }
@@ -172,6 +172,31 @@ Page {
             onSelectedContentPropertiesChanged: {
                 if (selectedContentProperties.filePath) {
                     pipelineManager.loadFromUri(selectedContentProperties.filePath)
+                }
+            }
+        }
+    }
+    Component {
+        id: styleSelectionComponent
+        Page {
+            allowedOrientations: Orientation.All
+            SilicaListView {
+                anchors.fill: parent
+                header: PageHeader { title: qsTr("Выбрать стиль") }
+                model: pipelineManager.getAvailableStyles()
+                delegate: BackgroundItem {
+                    id: delegate
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        text: modelData.name
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: delegate.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    }
+                    onClicked: {
+                        console.log("Applying style: " + modelData.file)
+                        pipelineManager.applyStyle(modelData.file)
+                        pageStack.pop()
+                    }
                 }
             }
         }

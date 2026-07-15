@@ -2,6 +2,7 @@
 #include "BackgroundWorker.h"
 #include "BackgroundCommand.h"
 #include "EnhanceCommand.h"
+#include "StyleTransferCommand.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -12,6 +13,7 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <QUrl>
+#include <auroraapp.h>
 
 ExportWorker::ExportWorker(QObject *parent) : QObject(parent) {}
 
@@ -287,6 +289,10 @@ void PipelineManager::applyEnhance() {
     applyCommand(QSharedPointer<EnhanceCommand>::create());
 }
 
+void PipelineManager::applyStyle(const QString& modelName) {
+    applyCommand(QSharedPointer<StyleTransferCommand>::create(modelName));
+}
+
 int PipelineManager::commandCount() const {
   QMutexLocker locker(&m_mutex);
   return m_commandStack.size();
@@ -304,5 +310,46 @@ void PipelineManager::exportImage() {
     return;
   }
 
-  emit exportRequested(imageToSave);
+    emit exportRequested(imageToSave);
+}
+
+QVariantList PipelineManager::getAvailableStyles() {
+    if (m_stylesCached) {
+        return m_availableStylesCache;
+    }
+
+    m_stylesCached = true;
+    
+    QString modelsDirStr = Aurora::Application::pathTo(QStringLiteral("data/models")).toLocalFile();
+    QDir modelsDir(modelsDirStr);
+    
+    if (!modelsDir.exists()) {
+        qWarning() << "Models directory does not exist:" << modelsDirStr;
+        return m_availableStylesCache;
+    }
+
+    QStringList filters;
+    filters << "*.onnx";
+    QFileInfoList fileList = modelsDir.entryInfoList(filters, QDir::Files);
+
+    for (const QFileInfo& fileInfo : fileList) {
+        QString fileName = fileInfo.fileName();
+        QString filePath = fileInfo.absoluteFilePath();
+        
+        int channels = MLInferenceEngine::getModelOutputChannels(filePath.toStdString());
+        if (channels == 3) {
+            QString displayName = fileName;
+            displayName.remove(".onnx");
+            if (!displayName.isEmpty()) {
+                displayName[0] = displayName[0].toUpper();
+            }
+            
+            QVariantMap styleMap;
+            styleMap["name"] = displayName;
+            styleMap["file"] = fileName;
+            m_availableStylesCache.append(styleMap);
+        }
+    }
+
+    return m_availableStylesCache;
 }

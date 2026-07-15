@@ -6,6 +6,7 @@
 #include <QSharedPointer>
 #include <QMutex>
 #include <QThread>
+#include <QVariantList>
 #include "ImageEditorCommand.h"
 
 class ExportWorker : public QObject {
@@ -61,6 +62,10 @@ public:
     // Trigger commands from QML
     Q_INVOKABLE void applyBackgroundRemoval();
     Q_INVOKABLE void applyEnhance();
+    Q_INVOKABLE void applyStyle(const QString& modelName);
+    
+    // Returns a list of available styles dynamically loaded from the models directory
+    Q_INVOKABLE QVariantList getAvailableStyles();
 
     // Returns the number of commands currently in the stack. Thread-safe.
     int commandCount() const;
@@ -100,6 +105,9 @@ private:
     QImage m_original;
     QImage m_current;
     QList<StackElement> m_commandStack;
+
+    QVariantList m_availableStylesCache;
+    bool m_stylesCached = false;
 
     ExportWorker* m_exportWorker;
     QThread m_exportThread;

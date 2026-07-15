@@ -73,12 +73,12 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
         std::vector<int64_t> input_node_dims = tensor_info.GetShape();
 
         if (input_node_dims.size() >= 4) {
-            if (input_node_dims[0] < 0) input_node_dims[0] = 1;
+            if (input_node_dims[0] <= 0) input_node_dims[0] = 1;
             inputChannels = input_node_dims[1];
             inputHeight = input_node_dims[2];
             inputWidth = input_node_dims[3];
-            if (inputHeight < 0) inputHeight = 256;
-            if (inputWidth < 0) inputWidth = 256;
+            if (inputHeight <= 0) inputHeight = 512;
+            if (inputWidth <= 0) inputWidth = 512;
         }
         inputDims = {1, static_cast<int64_t>(inputChannels), static_cast<int64_t>(inputHeight), static_cast<int64_t>(inputWidth)};
         
@@ -92,14 +92,19 @@ bool MLInferenceEngine::loadModel(const std::string& modelPath) {
         std::vector<int64_t> output_node_dims = out_tensor_info.GetShape();
 
         for (size_t i = 0; i < output_node_dims.size(); ++i) {
-            if (output_node_dims[i] < 0) {
+            if (output_node_dims[i] <= 0) {
                 if (i == 0) output_node_dims[i] = 1;
-                else if (i == 1) output_node_dims[i] = 1; // Assuming channel is 1
+                else if (i == 1) output_node_dims[i] = 3; // Default to 3 channels if dynamic
                 else if (i == 2) output_node_dims[i] = inputHeight;
                 else if (i == 3) output_node_dims[i] = inputWidth;
             }
         }
         outputDims = output_node_dims;
+        if (outputDims.size() >= 4) {
+            outputChannels = outputDims[1];
+        } else {
+            outputChannels = 1;
+        }
 
         size_t inputTensorSize = 1;
         for (auto d : inputDims) inputTensorSize *= d;
@@ -126,7 +131,7 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
     // 1. Препроцессинг
     if (profiler) profiler->startPhase("Preprocessing");
     
-    std::vector<float> inputTensorValues = MLTensorProcessor::processInput(original, inputWidth, inputHeight, isRMBG);
+    std::vector<float> inputTensorValues = MLTensorProcessor::processInput(original, inputWidth, inputHeight, normMode);
     if (inputTensorValues.empty()) {
         if (profiler) profiler->endPhase();
         return QImage();
@@ -174,11 +179,16 @@ QImage MLInferenceEngine::runInference(const QImage& original, MLProfiler* profi
         outH = outputDims[outputDims.size() - 2];
     }
 
-    QImage mask = MLTensorProcessor::processOutput(outputTensorValues, outW, outH);
+    QImage result;
+    if (outputChannels == 3) {
+        result = MLTensorProcessor::processOutputRGB(outputTensorValues, outW, outH);
+    } else {
+        result = MLTensorProcessor::processOutput(outputTensorValues, outW, outH);
+    }
 
     if (profiler) profiler->endPhase();
 
-    return mask;
+    return result;
 }
 
 QImage MLInferenceEngine::prepareModelInput(const QImage& original, const QSize& tensorSize, MLProfiler* profiler) {
@@ -204,4 +214,45 @@ QImage MLInferenceEngine::upscaleResult(const QImage& modelOutput, const QSize& 
         profiler->endPhase();
     }
     return upscaled;
+}
+
+int MLInferenceEngine::getModelOutputChannels(const std::string& modelPath) {
+    try {
+        Ort::Env tempEnv(ORT_LOGGING_LEVEL_FATAL, "ChannelCheck");
+        Ort::SessionOptions sessionOptions;
+        sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
+        Ort::Session tempSession(tempEnv, modelPath.c_str(), sessionOptions);
+        
+        Ort::AllocatorWithDefaultOptions allocator;
+        size_t num_outputs = tempSession.GetOutputCount();
+        
+        size_t best_output_idx = 0;
+        int64_t max_output_pixels = 0;
+        
+        for (size_t i = 0; i < num_outputs; ++i) {
+            auto type_info = tempSession.GetOutputTypeInfo(i);
+            auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+            std::vector<int64_t> shape = tensor_info.GetShape();
+            
+            int64_t pixels = 1;
+            for (size_t j = 0; j < shape.size(); ++j) {
+                if (shape[j] > 0) pixels *= shape[j];
+            }
+            if (pixels > max_output_pixels) {
+                max_output_pixels = pixels;
+                best_output_idx = i;
+            }
+        }
+        
+        auto type_info = tempSession.GetOutputTypeInfo(best_output_idx);
+        auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+        std::vector<int64_t> shape = tensor_info.GetShape();
+        
+        if (shape.size() >= 4) {
+            return shape[1] > 0 ? shape[1] : 3;
+        }
+        return 1;
+    } catch (...) {
+        return -1;
+    }
 }

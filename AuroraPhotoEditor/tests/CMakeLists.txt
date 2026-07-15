@@ -12,6 +12,7 @@ add_executable(test_pipeline
     ../src/MLTensorProcessor.cpp
     ../src/EnhanceCommand.cpp
     ../src/BackgroundCommand.cpp
+    ../src/StyleTransferCommand.cpp
 )
 
 target_include_directories(test_pipeline PRIVATE
