@@ -7,6 +7,7 @@
 #include <QSharedPointer>
 #include <QMutex>
 #include <QThread>
+#include <QVariantList>
 #include "ImageEditorCommand.h"
 
 class ExportWorker : public QObject {
@@ -27,6 +28,7 @@ class PipelineManager : public QObject {
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY commandStackChanged)
 
     Q_PROPERTY(bool isProcessing READ isProcessing NOTIFY isProcessingChanged)
+    Q_PROPERTY(qreal filterStrength READ filterStrength WRITE setFilterStrength NOTIFY filterStrengthChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
@@ -56,6 +58,9 @@ public:
     // Reverts the last applied command, restoring the previous image state. Thread-safe.
     Q_INVOKABLE bool undoLast();
 
+    qreal filterStrength() const { return m_filterStrength; }
+    void setFilterStrength(qreal strength);
+
     // Clears the command stack and resets the current image to the original. Thread-safe.
     Q_INVOKABLE void resetToOriginal();
 
@@ -63,6 +68,10 @@ public:
     Q_INVOKABLE void applyBackgroundRemoval();
     Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius);
     Q_INVOKABLE void applyEnhance();
+    Q_INVOKABLE void applyStyle(const QString& modelName);
+    
+    // Returns a list of available styles dynamically loaded from the models directory
+    Q_INVOKABLE QVariantList getAvailableStyles();
 
     // Returns the number of commands currently in the stack. Thread-safe.
     int commandCount() const;
@@ -90,8 +99,13 @@ signals:
     // Emitted when processing state changes
     void isProcessingChanged();
 
+    // Emitted when the filter strength changes
+    void filterStrengthChanged(qreal strength);
+
 private:
     void setIsProcessing(bool processing);
+    
+    QImage blendImages(const QImage& bottom, const QImage& top, qreal alpha) const;
 
     struct StackElement {
         QSharedPointer<ImageEditorCommand> command;
@@ -102,6 +116,11 @@ private:
     QImage m_original;
     QImage m_current;
     QList<StackElement> m_commandStack;
+
+    QVariantList m_availableStylesCache;
+    bool m_stylesCached = false;
+
+    qreal m_filterStrength = 1.0;
 
     ExportWorker* m_exportWorker;
     QThread m_exportThread;

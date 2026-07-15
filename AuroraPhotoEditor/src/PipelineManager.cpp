@@ -2,6 +2,7 @@
 #include "BackgroundWorker.h"
 #include "BackgroundCommand.h"
 #include "EnhanceCommand.h"
+#include "StyleTransferCommand.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -12,6 +13,8 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <QUrl>
+#include <QPainter>
+#include <auroraapp.h>
 
 ExportWorker::ExportWorker(QObject *parent) : QObject(parent) {}
 
@@ -133,6 +136,11 @@ void PipelineManager::setOriginalImage(const QImage &image) {
   }
 
   // Signals carry the NEW image, matching applyCommand/undoLast/resetToOriginal.
+  if (!qFuzzyCompare(m_filterStrength, qreal(1.0))) {
+      m_filterStrength = 1.0;
+      emit filterStrengthChanged(1.0);
+  }
+
   if (originalChanged) {
     emit originalImageChanged(image);
   }
@@ -211,6 +219,11 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
             emit currentImageChanged(resultImage);
             emit commandStackChanged();
 
+            if (!qFuzzyCompare(m_filterStrength, qreal(1.0))) {
+                m_filterStrength = 1.0;
+                emit filterStrengthChanged(1.0);
+            }
+
             setIsProcessing(false);
             m_activeWorker = nullptr;
           });
@@ -254,6 +267,11 @@ bool PipelineManager::undoLast() {
   if (changed) {
     emit currentImageChanged(newCurrent);
     emit commandStackChanged();
+    
+    if (!qFuzzyCompare(m_filterStrength, qreal(1.0))) {
+        m_filterStrength = 1.0;
+        emit filterStrengthChanged(1.0);
+    }
     return true;
   }
   return false;
@@ -374,6 +392,10 @@ void PipelineManager::applyEnhance() {
     applyCommand(QSharedPointer<EnhanceCommand>::create());
 }
 
+void PipelineManager::applyStyle(const QString& modelName) {
+    applyCommand(QSharedPointer<StyleTransferCommand>::create(modelName));
+}
+
 int PipelineManager::commandCount() const {
   QMutexLocker locker(&m_mutex);
   return m_commandStack.size();
@@ -384,6 +406,40 @@ bool PipelineManager::canUndo() const {
   return !m_commandStack.isEmpty();
 }
 
+QImage PipelineManager::blendImages(const QImage& bottom, const QImage& top, qreal alpha) const {
+    if (bottom.isNull() || top.isNull() || bottom.size() != top.size()) return top;
+    if (alpha >= 1.0) return top;
+    if (alpha <= 0.0) return bottom;
+
+    QImage result = bottom.copy();
+    QPainter painter(&result);
+    painter.setOpacity(alpha);
+    painter.drawImage(0, 0, top);
+    painter.end();
+    return result;
+}
+
+void PipelineManager::setFilterStrength(qreal strength) {
+    if (qFuzzyCompare(m_filterStrength, strength)) return;
+    
+    m_filterStrength = qBound(qreal(0.0), strength, qreal(1.0));
+    emit filterStrengthChanged(m_filterStrength);
+
+    QImage newCurrent;
+    {
+        QMutexLocker locker(&m_mutex);
+        if (m_commandStack.isEmpty()) return;
+
+        QImage topImage = m_commandStack.last().resultImage;
+        QImage bottomImage = (m_commandStack.size() > 1) ? m_commandStack[m_commandStack.size() - 2].resultImage : m_original;
+
+        m_current = blendImages(bottomImage, topImage, m_filterStrength);
+        newCurrent = m_current;
+    }
+    
+    emit currentImageChanged(newCurrent);
+}
+
 void PipelineManager::exportImage() {
   QImage imageToSave = getCurrentImage();
   if (imageToSave.isNull()) {
@@ -391,5 +447,46 @@ void PipelineManager::exportImage() {
     return;
   }
 
-  emit exportRequested(imageToSave);
+    emit exportRequested(imageToSave);
+}
+
+QVariantList PipelineManager::getAvailableStyles() {
+    if (m_stylesCached) {
+        return m_availableStylesCache;
+    }
+
+    m_stylesCached = true;
+    
+    QString modelsDirStr = Aurora::Application::pathTo(QStringLiteral("data/models")).toLocalFile();
+    QDir modelsDir(modelsDirStr);
+    
+    if (!modelsDir.exists()) {
+        qWarning() << "Models directory does not exist:" << modelsDirStr;
+        return m_availableStylesCache;
+    }
+
+    QStringList filters;
+    filters << "*.onnx";
+    QFileInfoList fileList = modelsDir.entryInfoList(filters, QDir::Files);
+
+    for (const QFileInfo& fileInfo : fileList) {
+        QString fileName = fileInfo.fileName();
+        QString filePath = fileInfo.absoluteFilePath();
+        
+        int channels = MLInferenceEngine::getModelOutputChannels(filePath.toStdString());
+        if (channels == 3) {
+            QString displayName = fileName;
+            displayName.remove(".onnx");
+            if (!displayName.isEmpty()) {
+                displayName[0] = displayName[0].toUpper();
+            }
+            
+            QVariantMap styleMap;
+            styleMap["name"] = displayName;
+            styleMap["file"] = fileName;
+            m_availableStylesCache.append(styleMap);
+        }
+    }
+
+    return m_availableStylesCache;
 }

@@ -112,7 +112,7 @@ Page {
     DockedPanel {
         id: toolsPanel
         width: parent.width
-        height: Theme.itemSizeExtraLarge
+        height: pipelineManager.canUndo ? Theme.itemSizeExtraLarge * 2 : Theme.itemSizeExtraLarge
         dock: Dock.Bottom
         open: pipelineManager.hasImage && activeTool === ""
 
@@ -120,7 +120,7 @@ Page {
             anchors.fill: parent
             color: Theme.overlayBackgroundColor
 
-            Row {
+            Column {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.rightMargin: Theme.paddingMedium
@@ -136,17 +136,43 @@ Page {
                         pipelineManager.applyBackgroundRemoval()
                     }
                 }
-                Button {
-                    width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Улучшение")
-                    onClicked: pipelineManager.applyEnhance()
+
+                Slider {
+                    width: parent.width
+                    label: qsTr("Сила фильтра")
+                    value: pipelineManager.filterStrength
+                    minimumValue: 0.0
+                    maximumValue: 1.0
+                    stepSize: 0.01
+                    valueText: Math.round(value * 100) + "%"
+                    onValueChanged: {
+                        if (pipelineManager.filterStrength !== value) {
+                            pipelineManager.filterStrength = value
+                        }
+                    }
+                    visible: pipelineManager.canUndo
                 }
-                Button {
-                    width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Стиль")
-                    onClicked: console.log("Style selected")
+
+                Row {
+                    width: parent.width - Theme.paddingMedium * 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingMedium
+
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Фон")
+                        onClicked: pipelineManager.applyBackgroundRemoval()
+                    }
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Улучшение")
+                        onClicked: pipelineManager.applyEnhance()
+                    }
+                    Button {
+                        width: (parent.width - Theme.paddingMedium * 2) / 3
+                        text: qsTr("Стиль")
+                        onClicked: pageStack.push(styleSelectionComponent)
+                    }
                 }
             }
         }
@@ -331,6 +357,31 @@ Page {
             onSelectedContentPropertiesChanged: {
                 if (selectedContentProperties.filePath) {
                     pipelineManager.loadFromUri(selectedContentProperties.filePath)
+                }
+            }
+        }
+    }
+    Component {
+        id: styleSelectionComponent
+        Page {
+            allowedOrientations: Orientation.All
+            SilicaListView {
+                anchors.fill: parent
+                header: PageHeader { title: qsTr("Выбрать стиль") }
+                model: pipelineManager.getAvailableStyles()
+                delegate: BackgroundItem {
+                    id: delegate
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        text: modelData.name
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: delegate.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    }
+                    onClicked: {
+                        console.log("Applying style: " + modelData.file)
+                        pipelineManager.applyStyle(modelData.file)
+                        pageStack.pop()
+                    }
                 }
             }
         }
