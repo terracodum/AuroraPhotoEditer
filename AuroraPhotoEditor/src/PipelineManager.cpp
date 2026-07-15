@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <QUrl>
+#include <QVariantMap>
 
 ExportWorker::ExportWorker(QObject *parent) : QObject(parent) {}
 
@@ -94,6 +95,7 @@ bool PipelineManager::loadFromUri(const QString &uriString) {
     const qint64 maxPixels = 64LL * 1024 * 1024; // 64 megapixels
     if (static_cast<qint64>(dims.width()) * dims.height() > maxPixels) {
       qWarning() << "Refusing to load oversized image:" << dims;
+      emit loadFailed(tr("Photo is too large (over 64 MP)"));
       return false;
     }
   }
@@ -101,6 +103,7 @@ bool PipelineManager::loadFromUri(const QString &uriString) {
   QImage image = reader.read();
   if (image.isNull()) {
     qWarning() << "Failed to read image:" << reader.errorString();
+    emit loadFailed(tr("Failed to load photo — file may be corrupted"));
     return false;
   }
 
@@ -184,6 +187,7 @@ bool PipelineManager::applyCommand(QSharedPointer<ImageEditorCommand> command) {
     disconnect(m_activeWorker, nullptr, this, nullptr);
     m_activeWorker->cancel();
     m_activeWorker = nullptr;
+    emit operationCanceled();
   }
 
   QThread *thread = new QThread();
@@ -382,6 +386,18 @@ int PipelineManager::commandCount() const {
 bool PipelineManager::canUndo() const {
   QMutexLocker locker(&m_mutex);
   return !m_commandStack.isEmpty();
+}
+
+QVariantList PipelineManager::historySteps() const {
+  QMutexLocker locker(&m_mutex);
+  QVariantList steps;
+  steps.reserve(m_commandStack.size());
+  for (const StackElement &element : m_commandStack) {
+    QVariantMap step;
+    step["name"] = element.command ? element.command->name() : QString();
+    steps.append(step);
+  }
+  return steps;
 }
 
 void PipelineManager::exportImage() {

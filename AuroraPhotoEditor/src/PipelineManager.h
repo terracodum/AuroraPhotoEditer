@@ -7,6 +7,7 @@
 #include <QSharedPointer>
 #include <QMutex>
 #include <QThread>
+#include <QVariantList>
 #include "ImageEditorCommand.h"
 
 class ExportWorker : public QObject {
@@ -27,6 +28,10 @@ class PipelineManager : public QObject {
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY commandStackChanged)
 
     Q_PROPERTY(bool isProcessing READ isProcessing NOTIFY isProcessingChanged)
+    // List of {"name": <command name>} objects, oldest first — backs the
+    // History panel (design_handoff README, screen 7). Built from the same
+    // command stack Undo/Reset already use, so it's real data, not mocked.
+    Q_PROPERTY(QVariantList historySteps READ historySteps NOTIFY commandStackChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
@@ -62,10 +67,20 @@ public:
     // Trigger commands from QML
     Q_INVOKABLE void applyBackgroundRemoval();
     Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius);
+
+    // Runs the built-in CLAHE + Gray World auto-enhance (EnhanceCommand) in
+    // the background. This is the real wiring for the "Улучшение" tool —
+    // QML cannot construct ImageEditorCommand subclasses itself.
     Q_INVOKABLE void applyEnhance();
 
     // Returns the number of commands currently in the stack. Thread-safe.
-    int commandCount() const;
+    // Q_INVOKABLE so QML (PullDownMenu badge, Batch/History panels) can
+    // call it directly.
+    Q_INVOKABLE int commandCount() const;
+
+    // Returns the command stack as a list of {"name": ...} maps, oldest
+    // first, for display in the History panel. Thread-safe.
+    QVariantList historySteps() const;
 
     // Returns whether there are any commands to undo.
     bool canUndo() const;
@@ -89,6 +104,14 @@ signals:
 
     // Emitted when processing state changes
     void isProcessingChanged();
+
+    // Emitted when loadFromUri() rejects a file (oversized/corrupt), so the
+    // UI can show a toast instead of silently doing nothing.
+    void loadFailed(const QString& reason);
+
+    // Emitted when a running command is superseded by a new one before it
+    // finished, so the UI can show "previous operation canceled".
+    void operationCanceled();
 
 private:
     void setIsProcessing(bool processing);

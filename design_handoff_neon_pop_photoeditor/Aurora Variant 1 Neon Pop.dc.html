@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.np-btn{cursor:pointer;border:none;font-family:'Manrope',sans-serif}
+.np-icon{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:#241b38;border:1px solid rgba(255,255,255,0.06);cursor:pointer}
+.np-icon svg{width:32px;height:32px}
+</style>
+</helmet>
+
+<div style="width:1600px;display:flex;flex-direction:column;font-family:'Manrope',sans-serif;background:#0b0710">
+
+  <div style="height:76px;flex:none;display:flex;align-items:center;gap:20px;padding:0 32px;background:#0b0710;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <span style="font:700 19px/1 'Manrope',sans-serif;color:#6d5c8f;letter-spacing:.08em;text-transform:uppercase">Прототип · Вариант 1 · Neon Pop</span>
+    <div style="flex:1"></div>
+    <button onClick="{{ simulateLoadError }}" class="np-btn" style="height:44px;padding:0 20px;border-radius:10px;border:1px solid #3a2a52;background:#1a1428;color:#d9c9ff;font:600 17px 'Manrope',sans-serif">Демо: ошибка загрузки</button>
+    <label style="display:flex;align-items:center;gap:8px;color:#b7a9d9;font:600 17px 'Manrope',sans-serif;cursor:pointer">
+      <input type="checkbox" checked="{{ savePendingFail }}" onChange="{{ toggleSaveFail }}" style="width:20px;height:20px;accent-color:#ec4899">
+      Сохранение с ошибкой
+    </label>
+    <button onClick="{{ openCover }}" class="np-btn" style="height:44px;padding:0 20px;border-radius:10px;border:1px solid #3a2a52;background:#1a1428;color:#d9c9ff;font:600 17px 'Manrope',sans-serif">Обложка (multitasking)</button>
+  </div>
+
+  <div style="width:1600px;height:2176px;position:relative;overflow:hidden;background:#15101f">
+
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+
+      <div style="flex:none;height:140px;display:flex;align-items:center;padding:0 36px;gap:18px;background:#1a1428;position:relative;z-index:2;box-shadow:0 2px 0 rgba(0,0,0,.3)">
+        <span style="font:800 44px/1 'Unbounded',sans-serif;color:#f5f1ff">PhotoEditor</span>
+        <div style="flex:1"></div>
+
+        <button onClick="{{ undo }}" class="np-icon" style="opacity:{{ undoOpacity }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a6 6 0 0 1 0 12h-1"/></svg>
+        </button>
+        <button onClick="{{ reset }}" class="np-icon" style="opacity:{{ undoOpacity }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
+        <sc-if value="{{ hasImage }}">
+          <button onClick="{{ save }}" class="np-icon" style="background:#ec4899">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1a1428" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          </button>
+        </sc-if>
+        <button onClick="{{ openAbout }}" class="np-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="8" r="1" fill="#f5f1ff" stroke="none"/></svg>
+          </button>
+      </div>
+
+      <div onClick="{{ openPulldown }}" style="flex:none;height:56px;display:flex;align-items:center;justify-content:center;background:#1a1428;cursor:pointer;position:relative;z-index:2;border-bottom:1px solid rgba(255,255,255,.05)">
+        <div style="display:flex;align-items:center;gap:8px;padding:0 24px;height:36px;border-radius:999px;background:#241b38;color:#d9c9ff;font:600 20px 'Manrope',sans-serif">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#d9c9ff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          Потянуть вниз — меню
+        </div>
+      </div>
+
+      <div style="flex:1;position:relative;overflow:hidden">
+
+        <sc-if value="{{ screenIsEmpty }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:0 80px">
+            <div style="width:180px;height:180px;border-radius:44px;background:#1f1830;display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 24 24" width="88" height="88" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 5 5"/></svg>
+            </div>
+            <span style="font:700 38px/1.3 'Unbounded',sans-serif;color:#f5f1ff;text-align:center">Нет выбранного фото</span>
+            <span style="font:500 28px/1.5 'Manrope',sans-serif;color:#b7a9d9;text-align:center;max-width:820px">Выберите снимок из галереи, чтобы начать редактирование</span>
+            <button onClick="{{ selectPhoto }}" class="np-btn" style="margin-top:12px;height:92px;padding:0 56px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font:700 30px 'Unbounded',sans-serif">Выбрать фото</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ screenIsLoaded }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+            <div style="flex:1;position:relative;margin:28px;border-radius:32px;overflow:hidden;background:repeating-linear-gradient(135deg,#241b38,#241b38 28px,#1a1428 28px,#1a1428 56px);display:flex;align-items:center;justify-content:center">
+              <div style="padding:16px 32px;border-radius:16px;background:rgba(11,7,16,.6);color:#d9c9ff;font:600 26px 'Manrope',sans-serif">photo.jpg</div>
+              <sc-if value="{{ isProcessing }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;inset:0;background:rgba(11,7,16,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+                  <div style="width:96px;height:96px;border-radius:50%;border:8px solid rgba(255,255,255,.15);border-top-color:#22e5a0;animation:npspin 0.9s linear infinite"></div>
+                  <span style="font:700 30px 'Unbounded',sans-serif;color:#fff">{{ processingLabel }}…</span>
+                </div>
+              </sc-if>
+            </div>
+            <div style="flex:none;height:180px;display:flex;padding:0 24px 24px;gap:20px">
+              <button onClick="{{ openSheetBg }}" style="flex:1;border-radius:28px;background:#1f1830;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:{{ toolOpacity }}">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><rect x="9" y="9" width="12" height="12" rx="2"/></svg>
+                <span style="font:700 26px 'Unbounded',sans-serif;color:#f5f1ff">Фон</span>
+              </button>
+              <button onClick="{{ runEnhance }}" style="flex:1;border-radius:28px;background:#1f1830;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:{{ toolOpacity }}">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#22e5a0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+                <span style="font:700 26px 'Unbounded',sans-serif;color:#f5f1ff">Улучшение</span>
+              </button>
+              <button onClick="{{ openSheetStyle }}" style="flex:1;border-radius:28px;background:#1f1830;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:{{ toolOpacity }}">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.2" fill="#ec4899" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="#ec4899" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="#ec4899" stroke="none"/></svg>
+                <span style="font:700 26px 'Unbounded',sans-serif;color:#f5f1ff">Стиль</span>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <sc-if value="{{ pulldownOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10" onClick="{{ closePulldown }}">
+        <div style="background:#1f1830;border-radius:0 0 32px 32px;padding:24px 0 32px;box-shadow:0 20px 40px rgba(0,0,0,.4)" onClick="{{ stopClick }}">
+          <div style="display:flex;align-items:center;gap:20px;padding:24px 40px;cursor:pointer" onClick="{{ selectPhoto }}">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 5 5"/></svg>
+            <span style="font:700 30px 'Unbounded',sans-serif;color:#f5f1ff">Выбрать фото</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:20px;padding:24px 40px;cursor:pointer" onClick="{{ openHistory }}">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>
+            <span style="font:700 30px 'Unbounded',sans-serif;color:#f5f1ff;flex:1">История изменений</span>
+            <span style="font:600 24px 'Manrope',sans-serif;color:#b7a9d9">{{ stepsCountLabel }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:20px;padding:24px 40px;cursor:pointer" onClick="{{ openBatch }}">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#22e5a0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span style="font:700 30px 'Unbounded',sans-serif;color:#f5f1ff;flex:1">Пакетная обработка</span>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:11;display:flex;align-items:flex-end" onClick="{{ closeSheet }}">
+        <div style="width:100%;max-height:82%;background:#1a1428;border-radius:40px 40px 0 0;display:flex;flex-direction:column;box-shadow:0 -20px 50px rgba(0,0,0,.5)" onClick="{{ stopClick }}">
+          <div style="flex:none;display:flex;align-items:center;padding:36px 40px 20px">
+            <sc-if value="{{ sheetIsBg }}"><span style="font:800 38px 'Unbounded',sans-serif;color:#f5f1ff">Фон</span></sc-if>
+            <sc-if value="{{ sheetIsStyle }}"><span style="font:800 38px 'Unbounded',sans-serif;color:#f5f1ff">Стиль</span></sc-if>
+            <div style="flex:1"></div>
+            <button onClick="{{ closeSheet }}" class="np-icon" style="width:56px;height:56px;border-radius:16px">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+
+          <div style="flex:1;overflow-y:auto;padding:0 40px 20px;display:flex;flex-direction:column;gap:28px">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-radius:16px;background:#241b38;width:fit-content">
+              <span style="width:12px;height:12px;border-radius:50%;background:#22e5a0"></span>
+              <span style="font:600 22px 'Manrope',sans-serif;color:#d9c9ff">ML-модель · on-device · ONNX Runtime</span>
+            </div>
+
+            <sc-if value="{{ sheetIsBg }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Режим</span>
+                <div style="display:flex;gap:14px">
+                  <div style="flex:1;height:76px;border-radius:20px;background:#8b5cf6;display:flex;align-items:center;justify-content:center;font:700 24px 'Unbounded',sans-serif;color:#fff">Удалить</div>
+                  <div style="flex:1;height:76px;border-radius:20px;background:#241b38;display:flex;align-items:center;justify-content:center;font:700 24px 'Unbounded',sans-serif;color:#d9c9ff">Размыть</div>
+                  <div style="flex:1;height:76px;border-radius:20px;background:#241b38;display:flex;align-items:center;justify-content:center;font:700 24px 'Unbounded',sans-serif;color:#d9c9ff">Заменить</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Интенсивность · 70%</span>
+                <div style="height:14px;border-radius:999px;background:#241b38;position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:70%;border-radius:999px;background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div>
+                  <div style="position:absolute;left:70%;top:50%;width:40px;height:40px;border-radius:50%;background:#fff;transform:translate(-50%,-50%)"></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Пресеты</span>
+                <div style="display:flex;gap:14px;flex-wrap:wrap">
+                  <button onClick="{{ applyBgPortrait }}" class="np-btn" style="height:64px;padding:0 28px;border-radius:999px;background:#241b38;color:#f5f1ff;font:600 24px 'Manrope',sans-serif">Портрет</button>
+                  <button onClick="{{ applyBgRemove }}" class="np-btn" style="height:64px;padding:0 28px;border-radius:999px;background:#241b38;color:#f5f1ff;font:600 24px 'Manrope',sans-serif">Студия</button>
+                  <button onClick="{{ applyBgBlur }}" class="np-btn" style="height:64px;padding:0 28px;border-radius:999px;background:#241b38;color:#f5f1ff;font:600 24px 'Manrope',sans-serif">Улица</button>
+                  <button onClick="{{ applyBgCustom }}" class="np-btn" style="height:64px;padding:0 28px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font:700 24px 'Manrope',sans-serif">Своё фото из галереи</button>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Точная правка маски</span>
+                <button onClick="{{ openMaskEdit }}" class="np-btn" style="display:flex;align-items:center;gap:16px;height:88px;padding:0 28px;border-radius:20px;background:#241b38;border:1px solid rgba(255,255,255,.08)">
+                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#22e5a0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.5 7.5"/></svg>
+                  <span style="font:700 26px 'Manrope',sans-serif;color:#f5f1ff">Кисть/ластик — подправить вручную</span>
+                </button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ sheetIsStyle }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Превью стилей — выбери, чтобы применить</span>
+                <div style="display:flex;gap:18px;overflow-x:auto;padding-bottom:8px">
+                  <sc-for list="{{ styleList }}" as="st" hint-placeholder-count="5">
+                    <button onClick="{{ st.select }}" class="np-btn" style="flex:none;width:150px;height:150px;border-radius:24px;background:{{ st.grad }};display:flex;align-items:flex-end;justify-content:center;padding:0 10px 16px;position:relative;outline:{{ st.selectOutline }};box-sizing:border-box">
+                      <span style="font:700 19px 'Unbounded',sans-serif;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.4);text-align:center;line-height:1.15;word-break:break-word">{{ st.label }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 24px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Сила эффекта · 55%</span>
+                <div style="height:14px;border-radius:999px;background:#241b38;position:relative">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:55%;border-radius:999px;background:linear-gradient(90deg,#22e5a0,#8b5cf6)"></div>
+                  <div style="position:absolute;left:55%;top:50%;width:40px;height:40px;border-radius:50%;background:#fff;transform:translate(-50%,-50%)"></div>
+                </div>
+                <span style="font:500 22px 'Manrope',sans-serif;color:#6d5c8f">Ползунок меняет только смешивание — без повторного запуска нейросети</span>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:none;display:flex;gap:20px;padding:24px 40px 44px">
+            <button onClick="{{ closeSheet }}" class="np-btn" style="flex:1;height:96px;border-radius:24px;background:#241b38;color:#f5f1ff;font:700 30px 'Unbounded',sans-serif">Отмена</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ historyOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:11;display:flex;align-items:flex-end" onClick="{{ closeHistory }}">
+        <div style="width:100%;max-height:75%;background:#1a1428;border-radius:40px 40px 0 0;display:flex;flex-direction:column" onClick="{{ stopClick }}">
+          <div style="flex:none;display:flex;align-items:center;padding:36px 40px 20px">
+            <span style="font:800 38px 'Unbounded',sans-serif;color:#f5f1ff">История изменений</span>
+            <div style="flex:1"></div>
+            <button onClick="{{ closeHistory }}" class="np-icon" style="width:56px;height:56px;border-radius:16px">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:0 40px 20px;display:flex;flex-direction:column;gap:12px">
+            <sc-if value="{{ hasSteps }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ steps }}" as="st" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:20px;padding:22px 24px;border-radius:20px;background:#241b38">
+                  <span style="width:14px;height:14px;border-radius:50%;background:{{ st.dotColor }}"></span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                    <span style="font:700 26px 'Manrope',sans-serif;color:#f5f1ff">{{ st.label }}</span>
+                    <span style="font:500 22px 'Manrope',sans-serif;color:#8b7aa8">{{ st.hint }}</span>
+                  </div>
+                  <sc-if value="{{ st.isLatest }}"><span style="font:700 20px 'Manrope',sans-serif;color:#22e5a0;text-transform:uppercase">Текущий</span></sc-if>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ noSteps }}" hint-placeholder-val="{{ true }}">
+              <span style="font:500 26px 'Manrope',sans-serif;color:#8b7aa8;text-align:center;padding:40px 0">Пока нет применённых шагов</span>
+            </sc-if>
+          </div>
+          <div style="flex:none;padding:16px 40px 40px;display:flex;flex-direction:column;gap:20px">
+            <span style="font:500 22px 'Manrope',sans-serif;color:#6d5c8f">Отмена доступна только для последнего шага</span>
+            <button onClick="{{ saveProject }}" style="height:88px;border-radius:24px;background:{{ projectSaveBg }};color:#f5f1ff;font:700 26px 'Unbounded',sans-serif;border:none;cursor:pointer">Сохранить как проект</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ maskEditMode }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#0b0710;z-index:15;display:flex;flex-direction:column">
+        <div style="flex:none;height:120px;display:flex;align-items:center;padding:0 32px;gap:16px;background:#1a1428">
+          <span style="font:700 30px 'Unbounded',sans-serif;color:#f5f1ff;flex:1">Правка маски</span>
+          <div style="display:flex;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+            <button onClick="{{ setMaskToolBrush }}" class="np-btn" style="height:64px;padding:0 26px;background:{{ brushBg }};color:#fff;font:700 22px 'Manrope',sans-serif">Кисть</button>
+            <button onClick="{{ setMaskToolEraser }}" class="np-btn" style="height:64px;padding:0 26px;background:{{ eraserBg }};color:#fff;font:700 22px 'Manrope',sans-serif">Ластик</button>
+          </div>
+        </div>
+        <div style="flex:1;position:relative;margin:28px;border-radius:32px;overflow:hidden;background:repeating-linear-gradient(135deg,#241b38,#241b38 28px,#1a1428 28px,#1a1428 56px);display:flex;align-items:center;justify-content:center">
+          <div style="width:140px;height:140px;border-radius:50%;border:3px dashed #22e5a0;display:flex;align-items:center;justify-content:center">
+            <span style="font:600 20px 'Manrope',sans-serif;color:#22e5a0;text-align:center;padding:0 12px">курсор {{ maskToolLabel }}</span>
+          </div>
+        </div>
+        <div style="flex:none;padding:0 32px 28px;display:flex;flex-direction:column;gap:16px">
+          <span style="font:700 22px 'Manrope',sans-serif;color:#b7a9d9;text-transform:uppercase;letter-spacing:.06em">Размер кисти</span>
+          <div style="height:14px;border-radius:999px;background:#241b38;position:relative">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:45%;border-radius:999px;background:#22e5a0"></div>
+            <div style="position:absolute;left:45%;top:50%;width:40px;height:40px;border-radius:50%;background:#fff;transform:translate(-50%,-50%)"></div>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;gap:20px;padding:0 32px 40px">
+          <button onClick="{{ cancelMaskEdit }}" class="np-btn" style="flex:1;height:92px;border-radius:24px;background:#241b38;color:#f5f1ff;font:700 28px 'Unbounded',sans-serif">Отмена</button>
+          <button onClick="{{ doneMaskEdit }}" class="np-btn" style="flex:1;height:92px;border-radius:24px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font:700 28px 'Unbounded',sans-serif">Готово</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ screenIsBatch }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#15101f;z-index:20;display:flex;flex-direction:column">
+        <div style="flex:none;height:140px;display:flex;align-items:center;gap:24px;padding:0 36px;background:#1a1428">
+          <button onClick="{{ backFromBatch }}" class="np-icon">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span style="font:800 40px 'Unbounded',sans-serif;color:#f5f1ff">Пакетная обработка</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:40px 40px 20px;display:flex;flex-direction:column;gap:24px">
+          <span style="font:500 26px 'Manrope',sans-serif;color:#b7a9d9">Выберите фото из галереи, чтобы применить к ним текущий проект ({{ batchStepsLabel }})</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px">
+            <sc-for list="{{ batchPhotos }}" as="ph" hint-placeholder-count="8">
+              <button onClick="{{ ph.toggle }}" class="np-btn" style="aspect-ratio:1;border-radius:20px;background:repeating-linear-gradient(135deg,#241b38,#241b38 16px,#1a1428 16px,#1a1428 32px);border:3px solid {{ ph.borderColor }};position:relative;display:flex;align-items:flex-end;justify-content:flex-end;padding:10px">
+                <sc-if value="{{ ph.isSelected }}"><span style="width:36px;height:36px;border-radius:50%;background:#22e5a0;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0b0710" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none;padding:20px 40px 44px;display:flex;flex-direction:column;gap:20px">
+          <sc-if value="{{ batchRunning }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <span style="font:600 24px 'Manrope',sans-serif;color:#f5f1ff">Обработано {{ batchProgress }} из {{ batchTotal }}</span>
+              <div style="height:16px;border-radius:999px;background:#241b38;position:relative;overflow:hidden">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ batchProgressPct }}%;border-radius:999px;background:linear-gradient(90deg,#8b5cf6,#22e5a0)"></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ batchDone }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:16px;padding:20px 24px;border-radius:20px;background:#1f1830">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#22e5a0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span style="font:600 26px 'Manrope',sans-serif;color:#f5f1ff">Готово! Обработано {{ batchTotal }} фото</span>
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:20px">
+            <span style="flex:1;display:flex;align-items:center;font:600 24px 'Manrope',sans-serif;color:#b7a9d9">Выбрано: {{ batchSelectedCount }}</span>
+            <button onClick="{{ runBatch }}" class="np-btn" style="height:92px;padding:0 44px;border-radius:24px;background:{{ batchRunBg }};color:#fff;font:700 28px 'Unbounded',sans-serif">Применить проект</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toastVisible }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:156px;left:32px;right:32px;z-index:12;display:flex;align-items:center;gap:16px;padding:22px 28px;border-radius:20px;background:{{ toastBg }};box-shadow:0 12px 30px rgba(0,0,0,.4)">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <span style="flex:1;font:600 26px 'Manrope',sans-serif;color:#fff">{{ toastText }}</span>
+        <button onClick="{{ dismissToast }}" style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ screenIsAbout }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#15101f;z-index:20;display:flex;flex-direction:column">
+        <div style="flex:none;height:140px;display:flex;align-items:center;gap:24px;padding:0 36px;background:#1a1428">
+          <button onClick="{{ back }}" class="np-icon">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f5f1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span style="font:800 40px 'Unbounded',sans-serif;color:#f5f1ff">О приложении</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:48px 56px 80px;display:flex;flex-direction:column;gap:28px">
+          <div style="display:flex;align-items:center;gap:24px">
+            <div style="width:110px;height:110px;border-radius:28px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 5 5"/></svg>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:800 36px 'Unbounded',sans-serif;color:#f5f1ff">AuroraPhotoEditor</span>
+              <span style="font:600 24px 'Manrope',sans-serif;color:#8b7aa8">Версия 1.0.0 · Aurora OS</span>
+            </div>
+          </div>
+          <span style="font:500 30px/1.6 'Manrope',sans-serif;color:#d9c9ff">AuroraPhotoEditor — лёгкий фоторедактор для планшетов Aurora OS. Выбирайте снимки из галереи, улучшайте экспозицию и цвет одним касанием, экспериментируйте с фоном и стилем, отменяйте любой шаг и сохраняйте результат обратно в галерею.</span>
+          <div style="height:1px;background:rgba(255,255,255,.08);margin:8px 0"></div>
+          <span style="font:800 30px 'Unbounded',sans-serif;color:#f5f1ff">Лицензия BSD 3-Clause</span>
+          <span style="font:400 24px/1.7 'Manrope',sans-serif;color:#8b7aa8;white-space:pre-wrap">Copyright (c) 2026, F+ / Aurora OS Team
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ screenIsNotice }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#15101f;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:0 100px">
+        <div style="width:160px;height:160px;border-radius:50%;background:{{ noticeIconBg }};display:flex;align-items:center;justify-content:center">
+          <sc-if value="{{ screenIsNoticeSuccess }}"><svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if>
+          <sc-if value="{{ screenIsNoticeFail }}"><svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></sc-if>
+        </div>
+        <span style="font:600 32px/1.5 'Manrope',sans-serif;color:#f5f1ff;text-align:center">{{ noticeMessage }}</span>
+        <button onClick="{{ noticeOk }}" class="np-btn" style="height:96px;padding:0 80px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font:700 32px 'Unbounded',sans-serif">OK</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ screenIsCover }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:#0b0710;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+        <div style="width:220px;height:220px;border-radius:52px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" width="110" height="110" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 5 5"/></svg>
+        </div>
+        <span style="font:800 40px 'Unbounded',sans-serif;color:#f5f1ff">PhotoEditor</span>
+        <span style="font:500 24px 'Manrope',sans-serif;color:#6d5c8f">обложка приложения · multitasking</span>
+        <button onClick="{{ back }}" class="np-btn" style="margin-top:24px;height:80px;padding:0 44px;border-radius:999px;background:#1f1830;color:#f5f1ff;font:700 26px 'Unbounded',sans-serif">Закрыть</button>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+<style>@keyframes npspin{to{transform:rotate(360deg)}}</style>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'empty',
+    prevScreen: 'empty',
+    pulldownOpen: false,
+    historyOpen: false,
+    sheet: null,
+    toast: null,
+    isProcessing: false,
+    processingLabel: '',
+    steps: [],
+    savePendingFail: false,
+    savedName: '',
+    maskEditMode: false,
+    maskTool: 'brush',
+    selectedStyleId: null,
+    batchSelected: [],
+    batchRunning: false,
+    batchDone: false,
+    batchProgress: 0,
+  };
+  _stepId = 0;
+  _toastTimer = null;
+  _styleTimer = null;
+  _batchTimer = null;
+
+  stopClick = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+
+  showToast = (kind, text, ms) => {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: { kind, text } });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), ms || 3200);
+  };
+  dismissToast = () => { if (this._toastTimer) clearTimeout(this._toastTimer); this.setState({ toast: null }); };
+
+  openPulldown = () => this.setState({ pulldownOpen: true });
+  closePulldown = () => this.setState({ pulldownOpen: false });
+
+  selectPhoto = () => this.setState({ screen: 'loaded', steps: [], pulldownOpen: false, historyOpen: false });
+
+  simulateLoadError = () => this.showToast('error', 'Не удалось загрузить фото: файл повреждён или больше 64 МП', 3600);
+
+  undo = () => { if (this.state.isProcessing || this.state.steps.length === 0) return; this.setState(s => ({ steps: s.steps.slice(0, -1) })); };
+  reset = () => { if (this.state.isProcessing || this.state.steps.length === 0) return; this.setState({ steps: [] }); };
+
+  runEnhance = () => {
+    if (this.state.isProcessing) { this.showToast('info', 'Предыдущая операция отменена', 2400); }
+    this.setState({ isProcessing: true, processingLabel: 'Улучшение' });
+    setTimeout(() => {
+      this._stepId++;
+      this.setState(s => ({ isProcessing: false, steps: [...s.steps, { id: this._stepId, label: 'Улучшение', hint: 'CLAHE + авто баланс белого' }] }));
+    }, 1100);
+  };
+
+  openSheetBg = () => { if (!this.state.isProcessing) this.setState({ sheet: 'bg' }); };
+  openSheetStyle = () => { if (!this.state.isProcessing) this.setState({ sheet: 'style' }); };
+  closeSheet = () => this.setState({ sheet: null });
+
+  applySheet = (label, hint) => {
+    this.setState({ sheet: null, isProcessing: true, processingLabel: label });
+    setTimeout(() => {
+      this._stepId++;
+      this.setState(s => ({ isProcessing: false, steps: [...s.steps, { id: this._stepId, label, hint }] }));
+    }, 1000);
+  };
+  applyBgRemove = () => this.applySheet('Фон: удалён', 'ML-сегментация');
+  applyBgBlur = () => this.applySheet('Фон: размыт', 'ML-сегментация');
+  applyBgPortrait = () => this.applySheet('Фон: портретный режим', 'ML-сегментация');
+  applyStyleVivid = () => this.applySheet('Стиль: Vivid', 'ML style transfer');
+  applyStyleMono = () => this.applySheet('Стиль: Monochrome', 'ML style transfer');
+  applyStyleFilm = () => this.applySheet('Стиль: Film', 'ML style transfer');
+  applyBgCustom = () => this.applySheet('Фон: своё фото', 'Aspect Fill · кастомная подложка');
+
+  openMaskEdit = () => { if (!this.state.isProcessing) this.setState({ sheet: null, maskEditMode: true, maskTool: 'brush' }); };
+  setMaskTool = (tool) => this.setState({ maskTool: tool });
+  cancelMaskEdit = () => this.setState({ maskEditMode: false });
+  doneMaskEdit = () => {
+    this.setState({ maskEditMode: false, isProcessing: true, processingLabel: 'Фон' });
+    setTimeout(() => {
+      this._stepId++;
+      this.setState(s => ({ isProcessing: false, steps: [...s.steps, { id: this._stepId, label: 'Фон: маска подправлена вручную', hint: 'кисть/ластик · ручная правка' }] }));
+    }, 800);
+  };
+
+  selectStyle = (id, label) => {
+    this.setState({ selectedStyleId: id });
+    if (this._styleTimer) clearTimeout(this._styleTimer);
+    this._styleTimer = setTimeout(() => {
+      this.applySheet('Стиль: ' + label, 'ML style transfer · NST');
+      this.setState({ selectedStyleId: null });
+    }, 450);
+  };
+
+  saveProject = () => {
+    if (this.state.steps.length === 0) return;
+    this.showToast('info', 'Проект «Правки · ' + this.state.steps.length + ' шаг.» сохранён локально', 2600);
+  };
+
+  openBatch = () => this.setState(s => ({ prevScreen: s.screen, screen: 'batch', pulldownOpen: false, batchSelected: [], batchRunning: false, batchDone: false, batchProgress: 0 }));
+  backFromBatch = () => this.setState(s => ({ screen: s.prevScreen }));
+  toggleBatchPhoto = (id) => this.setState(s => ({ batchSelected: s.batchSelected.includes(id) ? s.batchSelected.filter(x => x !== id) : [...s.batchSelected, id] }));
+  runBatch = () => {
+    const s = this.state;
+    if (s.batchSelected.length === 0 || s.steps.length === 0 || s.batchRunning) return;
+    this.setState({ batchRunning: true, batchProgress: 0, batchDone: false });
+    const total = s.batchSelected.length;
+    let done = 0;
+    this._batchTimer = setInterval(() => {
+      done++;
+      this.setState({ batchProgress: done });
+      if (done >= total) {
+        clearInterval(this._batchTimer);
+        this.setState({ batchRunning: false, batchDone: true });
+      }
+    }, 550);
+  };
+
+  save = () => {
+    if (this.state.isProcessing) return;
+    this.setState({ isProcessing: true, processingLabel: 'Сохранение' });
+    setTimeout(() => {
+      if (this.state.savePendingFail) {
+        this.setState({ isProcessing: false, prevScreen: 'loaded', screen: 'notice-fail' });
+      } else {
+        const t = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const name = `AuroraPhotoEditor_${t.getFullYear()}${pad(t.getMonth()+1)}${pad(t.getDate())}_${pad(t.getHours())}${pad(t.getMinutes())}${pad(t.getSeconds())}.jpg`;
+        this.setState({ isProcessing: false, prevScreen: 'loaded', screen: 'notice-success', savedName: name });
+      }
+    }, 1200);
+  };
+
+  openAbout = () => this.setState(s => ({ prevScreen: s.screen, screen: 'about' }));
+  openCover = () => this.setState(s => ({ prevScreen: s.screen, screen: 'cover' }));
+  back = () => this.setState(s => ({ screen: s.prevScreen }));
+  noticeOk = () => this.setState({ screen: 'loaded' });
+
+  openHistory = () => this.setState({ historyOpen: true, pulldownOpen: false });
+  closeHistory = () => this.setState({ historyOpen: false });
+
+  toggleSaveFail = () => this.setState(s => ({ savePendingFail: !s.savePendingFail }));
+
+  renderVals() {
+    const s = this.state;
+    const canUndo = s.steps.length > 0;
+    const dotColors = ['#8b5cf6', '#ec4899', '#22e5a0'];
+    const stepsView = s.steps.slice().reverse().map((st, i) => ({ ...st, isLatest: i === 0, dotColor: dotColors[st.id % 3] }));
+    const declOf = n => { const m = n % 100; if (m >= 11 && m <= 14) return 'шагов'; const l = n % 10; if (l === 1) return 'шаг'; if (l >= 2 && l <= 4) return 'шага'; return 'шагов'; };
+    return {
+      screenIsEmpty: s.screen === 'empty',
+      screenIsLoaded: s.screen === 'loaded',
+      screenIsAbout: s.screen === 'about',
+      screenIsNotice: s.screen === 'notice-success' || s.screen === 'notice-fail',
+      screenIsNoticeSuccess: s.screen === 'notice-success',
+      screenIsNoticeFail: s.screen === 'notice-fail',
+      screenIsCover: s.screen === 'cover',
+      hasImage: s.screen === 'loaded',
+      canUndo,
+      undoOpacity: canUndo && !s.isProcessing ? 1 : 0.35,
+      toolOpacity: s.isProcessing ? 0.4 : 1,
+      isProcessing: s.isProcessing,
+      processingLabel: s.processingLabel,
+      pulldownOpen: s.pulldownOpen,
+      openPulldown: this.openPulldown,
+      closePulldown: this.closePulldown,
+      stopClick: this.stopClick,
+      selectPhoto: this.selectPhoto,
+      simulateLoadError: this.simulateLoadError,
+      undo: this.undo,
+      reset: this.reset,
+      save: this.save,
+      runEnhance: this.runEnhance,
+      openSheetBg: this.openSheetBg,
+      openSheetStyle: this.openSheetStyle,
+      closeSheet: this.closeSheet,
+      sheetIsBg: s.sheet === 'bg',
+      sheetIsStyle: s.sheet === 'style',
+      sheetOpen: !!s.sheet,
+      applyBgRemove: this.applyBgRemove,
+      applyBgBlur: this.applyBgBlur,
+      applyBgPortrait: this.applyBgPortrait,
+      applyStyleVivid: this.applyStyleVivid,
+      applyStyleMono: this.applyStyleMono,
+      applyStyleFilm: this.applyStyleFilm,
+      openAbout: this.openAbout,
+      openCover: this.openCover,
+      back: this.back,
+      noticeOk: this.noticeOk,
+      openHistory: this.openHistory,
+      closeHistory: this.closeHistory,
+      historyOpen: s.historyOpen,
+      steps: stepsView,
+      hasSteps: s.steps.length > 0,
+      noSteps: s.steps.length === 0,
+      stepsCountLabel: s.steps.length === 0 ? 'нет шагов' : (s.steps.length + ' ' + declOf(s.steps.length)),
+      toastVisible: !!s.toast,
+      toastText: s.toast ? s.toast.text : '',
+      toastBg: s.toast && s.toast.kind === 'error' ? '#e2265f' : '#5b3fa8',
+      dismissToast: this.dismissToast,
+      savePendingFail: s.savePendingFail,
+      toggleSaveFail: this.toggleSaveFail,
+      noticeIconBg: s.screen === 'notice-success' ? '#22c583' : '#e2265f',
+      noticeMessage: s.screen === 'notice-success' ? ('Изображение успешно сохранено: /home/user/Pictures/' + s.savedName) : 'Не удалось сохранить изображение',
+      applyBgCustom: this.applyBgCustom,
+      openMaskEdit: this.openMaskEdit,
+      maskEditMode: s.maskEditMode,
+      isBrush: s.maskTool === 'brush',
+      isEraser: s.maskTool === 'eraser',
+      setMaskToolBrush: () => this.setMaskTool('brush'),
+      setMaskToolEraser: () => this.setMaskTool('eraser'),
+      cancelMaskEdit: this.cancelMaskEdit,
+      doneMaskEdit: this.doneMaskEdit,
+      styleList: [
+        { id: 1, label: 'Vivid', grad: 'linear-gradient(135deg,#8b5cf6,#ec4899)' },
+        { id: 2, label: 'Mono', grad: 'linear-gradient(135deg,#4b4560,#241b38)' },
+        { id: 3, label: 'Film', grad: 'linear-gradient(135deg,#22e5a0,#8b5cf6)' },
+        { id: 4, label: 'Ван Гог', grad: 'linear-gradient(135deg,#2563eb,#eab308)' },
+        { id: 5, label: 'Укиё-э', grad: 'linear-gradient(135deg,#ec4899,#f97316)' },
+      ].map(it => ({ ...it, isSelected: s.selectedStyleId === it.id, selectOutline: s.selectedStyleId === it.id ? '4px solid #fff' : 'none', select: () => this.selectStyle(it.id, it.label) })),
+      saveProject: this.saveProject,
+      projectSaveDisabled: s.steps.length === 0,
+      projectSaveBg: s.steps.length === 0 ? '#241b38' : 'linear-gradient(135deg,#8b5cf6,#ec4899)',
+      brushBg: s.maskTool === 'brush' ? '#8b5cf6' : '#241b38',
+      eraserBg: s.maskTool === 'eraser' ? '#8b5cf6' : '#241b38',
+      maskToolLabel: s.maskTool === 'brush' ? 'кисти' : 'ластика',
+      batchRunBg: (s.batchSelected.length > 0 && s.steps.length > 0 && !s.batchRunning) ? 'linear-gradient(135deg,#8b5cf6,#ec4899)' : '#3a3050',
+      openBatch: this.openBatch,
+      backFromBatch: this.backFromBatch,
+      runBatch: this.runBatch,
+      screenIsBatch: s.screen === 'batch',
+      batchPhotos: [1,2,3,4,5,6,7,8].map(id => ({ id, isSelected: s.batchSelected.includes(id), borderColor: s.batchSelected.includes(id) ? '#22e5a0' : 'rgba(255,255,255,.08)', toggle: () => this.toggleBatchPhoto(id) })),
+      batchSelectedCount: s.batchSelected.length,
+      batchCanRun: s.batchSelected.length > 0 && s.steps.length > 0 && !s.batchRunning,
+      batchRunning: s.batchRunning,
+      batchDone: s.batchDone,
+      batchProgress: s.batchProgress,
+      batchTotal: s.batchSelected.length,
+      batchProgressPct: s.batchSelected.length ? Math.round((s.batchProgress / s.batchSelected.length) * 100) : 0,
+      batchStepsLabel: s.steps.length === 0 ? 'нет сохранённых шагов' : (s.steps.length + ' ' + declOf(s.steps.length) + ' в текущем проекте'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
