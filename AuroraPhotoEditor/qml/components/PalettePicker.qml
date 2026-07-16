@@ -28,9 +28,15 @@ Item {
     }
 
     function _syncFromColor(c) {
-        hue = c.hsvHue < 0 ? hue : c.hsvHue
-        sat = c.hsvSaturation
-        val = c.hsvValue
+        // Defensive against `c` (or its hsv* accessors) briefly being
+        // undefined during binding evaluation — was producing a real
+        // "Cannot assign [undefined] to double" warning on some launches.
+        if (c === undefined || c === null)
+            return
+        var h = c.hsvHue
+        hue = (h === undefined || h < 0) ? hue : h
+        sat = c.hsvSaturation !== undefined ? c.hsvSaturation : sat
+        val = c.hsvValue !== undefined ? c.hsvValue : val
     }
 
     onColorChanged: if (!_syncing) _syncFromColor(color)

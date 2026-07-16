@@ -21,6 +21,12 @@ Page {
         backgroundSheet.open ? backgroundSheet.height : 0,
         styleSheet.open ? styleSheet.height : 0)
 
+    // True from the moment a photo is picked until it actually appears.
+    // loadFromUri() runs on the UI thread, so nothing can animate during
+    // the read itself — this just avoids a blank frame right before/after
+    // that blocking call instead of a jump-cut from empty to loaded.
+    property bool photoLoading: false
+
     Rectangle {
         anchors.fill: parent
         color: NeonTheme.bgBase
@@ -125,7 +131,7 @@ Page {
             id: placeholder
             anchors.centerIn: parent
             spacing: NeonTheme.paddingLarge
-            visible: !pipelineManager.hasImage
+            visible: !pipelineManager.hasImage && !mainPage.photoLoading
             width: parent.width - 2 * NeonTheme.paddingXLarge
 
             Rectangle {
@@ -171,6 +177,17 @@ Page {
                 text: qsTr("Выбрать фото")
                 onClicked: pageStack.push(imagePickerComponent)
             }
+        }
+
+        // Shown from the moment a photo is picked until it actually appears,
+        // instead of a blank area (only when there's no previous photo
+        // already on screen — re-picking over an existing photo just lets
+        // the new one fade in directly, no need to flash a skeleton over it).
+        ShimmerPlaceholder {
+            anchors.fill: parent
+            anchors.margins: NeonTheme.paddingLarge
+            anchors.bottomMargin: Math.max(toolsPanel.height, mainPage.openSheetHeight) + NeonTheme.paddingLarge
+            running: mainPage.photoLoading && !pipelineManager.hasImage
         }
 
         // Loaded state
@@ -285,6 +302,7 @@ Page {
         onCurrentImageChanged: {
             if (pipelineManager.hasImage) {
                 selectedImage.source = "image://pipeline/current?t=" + Date.now()
+                mainPage.photoLoading = false
             } else {
                 selectedImage.source = undefined
             }
@@ -304,7 +322,10 @@ Page {
             }
         }
 
-        onLoadFailed: toast.show(reason, "error")
+        onLoadFailed: {
+            mainPage.photoLoading = false
+            toast.show(reason, "error")
+        }
         onOperationCanceled: toast.show(qsTr("Предыдущая операция отменена"), "info")
     }
 
@@ -313,6 +334,7 @@ Page {
         ImagePickerPage {
             onSelectedContentPropertiesChanged: {
                 if (selectedContentProperties.filePath) {
+                    mainPage.photoLoading = true
                     pipelineManager.loadFromUri(selectedContentProperties.filePath)
                 }
             }

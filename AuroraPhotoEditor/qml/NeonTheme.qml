@@ -45,11 +45,15 @@ QtObject {
 
     // ---- Typography --------------------------------------------------
     // Unbounded — display/headings/buttons; Manrope — body/captions.
-    // TODO(assets): bundle the actual Unbounded/Manrope .ttf/.otf files
-    // under qml/fonts/ and load them with FontLoader; until then these
-    // family names fall back to the platform default font.
-    readonly property string fontDisplay: "Unbounded"
-    readonly property string fontBody: "Manrope"
+    // Both are bundled as variable-weight TTFs under qml/fonts/ (OFL
+    // licensed, see the accompanying OFL-*.txt files) so font.weight below
+    // actually renders distinct weights instead of falling back to the
+    // platform default font with no Bold/DemiBold variation.
+    property FontLoader _unboundedLoader: FontLoader { source: Qt.resolvedUrl("fonts/Unbounded-Variable.ttf") }
+    property FontLoader _manropeLoader: FontLoader { source: Qt.resolvedUrl("fonts/Manrope-Variable.ttf") }
+
+    readonly property string fontDisplay: _unboundedLoader.name || "Unbounded"
+    readonly property string fontBody: _manropeLoader.name || "Manrope"
 
     readonly property int fontSizeH1: px(42)
     readonly property int fontSizeCardTitle: px(37)

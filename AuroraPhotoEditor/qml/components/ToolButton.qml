@@ -15,6 +15,11 @@ Rectangle {
     radius: NeonTheme.radiusMedium
     color: NeonTheme.bgCard
     opacity: enabled ? 1.0 : 0.4
+    scale: mouseArea.pressed ? 0.95 : 1.0
+
+    Behavior on scale {
+        NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+    }
 
     Column {
         anchors.centerIn: parent
@@ -39,7 +44,12 @@ Rectangle {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
-        onClicked: root.clicked()
+        onPressed: Haptics.press()
+        onClicked: {
+            Haptics.release()
+            root.clicked()
+        }
     }
 }

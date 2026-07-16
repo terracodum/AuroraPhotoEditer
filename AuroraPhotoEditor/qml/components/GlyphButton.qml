@@ -20,6 +20,11 @@ Item {
     width: NeonTheme.iconButtonSize
     height: NeonTheme.iconButtonSize
     opacity: enabled ? 1.0 : 0.35
+    scale: mouseArea.pressed ? 0.92 : 1.0
+
+    Behavior on scale {
+        NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -44,6 +49,10 @@ Item {
     MouseArea {
         id: mouseArea
         anchors.fill: parent
-        onClicked: root.clicked()
+        onPressed: Haptics.press()
+        onClicked: {
+            Haptics.release()
+            root.clicked()
+        }
     }
 }

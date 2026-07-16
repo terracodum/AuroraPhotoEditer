@@ -22,6 +22,7 @@ qt5_add_translation(QmFiles ${TsFiles})
 set(SOURCES
     qml/${short_name}.qml
     qml/NeonTheme.qml
+    qml/Haptics.qml
     qml/qmldir
     qml/cover/DefaultCoverPage.qml
     qml/pages/AboutPage.qml
@@ -39,6 +40,7 @@ set(SOURCES
     qml/components/SegmentedControl.qml
     qml/components/ToastBanner.qml
     qml/components/BusyOverlay.qml
+    qml/components/ShimmerPlaceholder.qml
     qml/components/PageHeaderBar.qml
     qml/components/BottomSheet.qml
     qml/components/BackgroundSheet.qml

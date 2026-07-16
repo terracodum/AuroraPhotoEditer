@@ -74,7 +74,13 @@ BottomSheet {
     // --- Цвет: single-color palette ---------------------------------
     PalettePicker {
         width: parent.width
-        visible: root.modeIndex === 0
+        // Cheap opacity crossfade between modes: fade out first, then
+        // collapse out of the Column layout only once fully transparent
+        // (rather than an instant `visible` swap), so switching modes
+        // doesn't jump. No extra repaint cost — plain compositor opacity.
+        opacity: root.modeIndex === 0 ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
         color: root.selectedColor1
         onColorPicked: {
             root.selectedColor1 = pickedColor
@@ -85,7 +91,9 @@ BottomSheet {
     // --- Градиент: two endpoints, edited via the same palette --------
     Column {
         width: parent.width
-        visible: root.modeIndex === 1
+        opacity: root.modeIndex === 1 ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
         spacing: NeonTheme.paddingMedium
 
         Row {
@@ -156,7 +164,9 @@ BottomSheet {
     // --- Блюр: intensity -------------------------------------------
     Column {
         width: parent.width
-        visible: root.modeIndex === 2
+        opacity: root.modeIndex === 2 ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
         spacing: NeonTheme.paddingTiny
 
         Item {

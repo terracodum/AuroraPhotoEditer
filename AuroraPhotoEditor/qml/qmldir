@@ -1,1 +1,2 @@
 singleton NeonTheme 1.0 NeonTheme.qml
+singleton Haptics 1.0 Haptics.qml
