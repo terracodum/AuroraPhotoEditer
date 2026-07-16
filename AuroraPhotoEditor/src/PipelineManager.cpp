@@ -334,16 +334,18 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
 
     QImage inputImage = m_commandStack.size() > 1 ? m_commandStack[m_commandStack.size() - 2].resultImage : m_original;
 
-    if (m_activeWorker) {
-        m_activeWorker->cancel();
-        disconnect(m_activeWorker, nullptr, this, nullptr);
-    }
-
+    // An in-flight worker from this method is handled by the pending-coalescing
+    // path above, so we never supersede our own worker here. Another method may
+    // still cancel()+disconnect this worker, so the worker->thread quit
+    // connections below are kept independent of `this` to guarantee the thread
+    // always tears down (no leaked QThread/worker).
     QThread *thread = new QThread();
     BackgroundWorker *worker = new BackgroundWorker(bgCmd, inputImage);
     worker->moveToThread(thread);
 
     connect(thread, &QThread::started, worker, &BackgroundWorker::process);
+    connect(worker, &BackgroundWorker::success, thread, &QThread::quit);
+    connect(worker, &BackgroundWorker::canceled, thread, &QThread::quit);
 
     connect(worker, &BackgroundWorker::success, this,
             [this, worker, bgCmd](const QImage &resultImage) {
@@ -374,8 +376,7 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
                 
                 emit currentImageChanged(resultImage);
                 m_activeWorker = nullptr;
-                worker->thread()->quit();
-                
+
                 if (hasPending) {
                     QMetaObject::invokeMethod(this, "updateBackground", Qt::QueuedConnection,
                                               Q_ARG(int, nextMode),
@@ -390,7 +391,6 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
         if (m_activeWorker == worker) {
             m_activeWorker = nullptr;
         }
-        worker->thread()->quit();
     });
 
     connect(thread, &QThread::finished, worker, &QObject::deleteLater);

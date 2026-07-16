@@ -21,9 +21,11 @@ QString BackgroundCommand::name() const {
 
 // Многопоточная функция попиксельного смешивания двух QImage на базе маски
 static QImage blendTwoImages(const QImage& fg, const QImage& bg, const QImage& mask) {
-    // Используем Premultiplied, так как формула смешивания с прозрачным фоном 
-    // по сути выполняет pre-multiplication RGB каналов.
-    QImage result(fg.size(), QImage::Format_ARGB32_Premultiplied);
+    // Straight (non-premultiplied) alpha: the blend below computes
+    // channel*alpha + channel*(1-alpha) without pre-multiplying by the result
+    // alpha, so the output must be labelled ARGB32, not Premultiplied — otherwise
+    // Qt mis-composites any pixel with alpha < 255 (e.g. a translucent bg color).
+    QImage result(fg.size(), QImage::Format_ARGB32);
     QImage fg32 = fg.convertToFormat(QImage::Format_ARGB32);
     QImage bg32 = bg.convertToFormat(QImage::Format_ARGB32);
     
