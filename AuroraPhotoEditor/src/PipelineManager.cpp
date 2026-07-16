@@ -301,7 +301,7 @@ void PipelineManager::applyBackgroundRemoval() {
     applyCommand(QSharedPointer<BackgroundCommand>::create());
 }
 
-void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius) {
+void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius, const QString& imageUri) {
     QMutexLocker locker(&m_mutex);
     if (m_commandStack.isEmpty()) return;
 
@@ -314,6 +314,7 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
         m_pendingC1 = c1;
         m_pendingC2 = c2;
         m_pendingBlur = blurRadius;
+        m_pendingImageUri = imageUri;
         return;
     }
 
@@ -323,6 +324,9 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
     bgCmd->setColor1(c1);
     bgCmd->setColor2(c2);
     bgCmd->setBlurRadius(blurRadius);
+    if (mode == BackgroundCommand::ModeCustomImage) {
+        bgCmd->setCustomImagePath(imageUri);
+    }
 
     QImage inputImage = m_commandStack.size() > 1 ? m_commandStack[m_commandStack.size() - 2].resultImage : m_original;
 
@@ -344,6 +348,7 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
                 int nextMode = 0;
                 QColor nextC1, nextC2;
                 int nextBlur = 0;
+                QString nextImageUri;
                 bool hasPending = false;
 
                 {
@@ -358,6 +363,7 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
                         nextC1 = m_pendingC1;
                         nextC2 = m_pendingC2;
                         nextBlur = m_pendingBlur;
+                        nextImageUri = m_pendingImageUri;
                         m_updatePending = false;
                     }
                 }
@@ -371,7 +377,8 @@ void PipelineManager::updateBackground(int mode, const QColor& c1, const QColor&
                                               Q_ARG(int, nextMode),
                                               Q_ARG(QColor, nextC1),
                                               Q_ARG(QColor, nextC2),
-                                              Q_ARG(int, nextBlur));
+                                              Q_ARG(int, nextBlur),
+                                              Q_ARG(QString, nextImageUri));
                 }
             });
 
