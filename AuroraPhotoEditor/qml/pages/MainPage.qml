@@ -14,6 +14,13 @@ Page {
     // tool supersedes the running one (see operationCanceled handling below).
     property string currentOperationLabel: qsTr("Processing")
 
+    // Extra bottom margin while a bottom sheet ("Фон"/"Стиль") is open, so
+    // the photo shrinks to fit above it instead of being covered — see
+    // BottomSheet's capped height (0.5 of screen, was 0.88).
+    readonly property real openSheetHeight: Math.max(
+        backgroundSheet.open ? backgroundSheet.height : 0,
+        styleSheet.open ? styleSheet.height : 0)
+
     Rectangle {
         anchors.fill: parent
         color: NeonTheme.bgBase
@@ -99,6 +106,8 @@ Page {
         clip: true
 
         PullDownMenu {
+            backgroundColor: NeonTheme.bgSurface
+
             MenuItem {
                 text: qsTr("Выбрать фото")
                 onClicked: pageStack.push(imagePickerComponent)
@@ -108,10 +117,6 @@ Page {
                       ? qsTr("История изменений") + " (" + pipelineManager.commandCount() + ")"
                       : qsTr("История изменений")
                 onClicked: historyPanel.show()
-            }
-            MenuItem {
-                text: qsTr("Пакетная обработка")
-                onClicked: pageStack.push(Qt.resolvedUrl("BatchPage.qml"))
             }
         }
 
@@ -173,11 +178,17 @@ Page {
             id: selectedImage
             anchors.fill: parent
             anchors.margins: NeonTheme.paddingLarge
-            anchors.bottomMargin: toolsPanel.height + NeonTheme.paddingLarge
+            // The sheet renders on top of (not below) the tool panel, so only
+            // the taller of the two needs to be reserved — not both stacked.
+            anchors.bottomMargin: Math.max(toolsPanel.height, mainPage.openSheetHeight) + NeonTheme.paddingLarge
             fillMode: Image.PreserveAspectFit
             visible: pipelineManager.hasImage
             opacity: visible ? 1.0 : 0.0
             cache: false // Prevent memory leaks from timestamp updates
+
+            Behavior on anchors.bottomMargin {
+                NumberAnimation { duration: NeonTheme.fadeDuration; easing.type: Easing.InOutQuad }
+            }
 
             Behavior on opacity {
                 FadeAnimation { duration: NeonTheme.fadeDuration }
@@ -194,7 +205,10 @@ Page {
         }
 
         BusyOverlay {
-            anchors.fill: parent
+            // Centered on the photo's own (possibly shrunk) bounds, not the
+            // whole flickable — otherwise the spinner sits in empty space
+            // once the image shrinks to fit above an open bottom sheet.
+            anchors.fill: selectedImage
             running: pipelineManager.isProcessing
             operationLabel: mainPage.currentOperationLabel
         }

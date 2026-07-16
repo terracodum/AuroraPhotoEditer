@@ -19,8 +19,13 @@ DockedPanel {
 
     signal closed
 
+    // Capped well under full-screen (was 0.88) so the photo canvas above
+    // stays visible instead of being covered — see MainPage's
+    // `canvasBottomMargin`, which shrinks the photo to fit above whichever
+    // sheet is open. Content taller than this scrolls inside the sheet
+    // (SilicaFlickable below already supports that).
     height: Math.min(
-        (parent ? parent.height : NeonTheme.px(1200)) * 0.88,
+        (parent ? parent.height : NeonTheme.px(1200)) * 0.5,
         headerItem.height + bodyColumn.height + NeonTheme.paddingXLarge * 2 + NeonTheme.paddingMedium)
 
     function show() { root.open = true }

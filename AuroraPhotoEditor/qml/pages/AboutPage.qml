@@ -54,7 +54,7 @@ Page {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "AuroraPhotoEditor"
+                    text: "ZeroPhotos"
                     color: NeonTheme.textPrimary
                     font.family: NeonTheme.fontDisplay
                     font.weight: NeonTheme.fontWeightBold
