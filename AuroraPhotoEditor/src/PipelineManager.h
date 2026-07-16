@@ -66,7 +66,7 @@ public:
 
     // Trigger commands from QML
     Q_INVOKABLE void applyBackgroundRemoval();
-    Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius);
+    Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius, const QString& imageUri = QString());
     Q_INVOKABLE void applyEnhance();
     Q_INVOKABLE void applyStyle(const QString& modelName);
     
@@ -133,4 +133,6 @@ private:
     QColor m_pendingC1;
     QColor m_pendingC2;
     int m_pendingBlur = 0;
+    QString m_pendingImageUri;
 };
+

@@ -124,12 +124,10 @@ Page {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.paddingMedium
                 anchors.rightMargin: Theme.paddingMedium
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.paddingMedium
 
                 Button {
                     width: (parent.width - Theme.paddingMedium * 2) / 3
-                    anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Фон")
                     onClicked: {
                         activeTool = "background"
@@ -189,6 +187,7 @@ Page {
         property string selectedColor1: "white"
         property string selectedColor2: "black"
         property bool isGradient: false
+        property string selectedImagePath: ""
 
         function updateBg() {
             if (currentTab === "color") {
@@ -197,8 +196,12 @@ Page {
                 } else {
                     pipelineManager.updateBackground(0, selectedColor1, "transparent", 0)
                 }
-            } else {
+            } else if (currentTab === "blur") {
                 pipelineManager.updateBackground(2, "transparent", "transparent", blurSlider.value)
+            } else if (currentTab === "photo") {
+                if (selectedImagePath !== "") {
+                    pipelineManager.updateBackground(3, "transparent", "transparent", 0, selectedImagePath)
+                }
             }
         }
 
@@ -216,7 +219,7 @@ Page {
                     height: Theme.itemSizeMedium
                     
                     Button {
-                        width: parent.width / 2
+                        width: parent.width / 3
                         text: qsTr("Цвет")
                         highlighted: backgroundPanel.currentTab === "color"
                         onClicked: {
@@ -225,11 +228,20 @@ Page {
                         }
                     }
                     Button {
-                        width: parent.width / 2
+                        width: parent.width / 3
                         text: qsTr("Размытие")
                         highlighted: backgroundPanel.currentTab === "blur"
                         onClicked: {
                             backgroundPanel.currentTab = "blur"
+                            backgroundPanel.updateBg()
+                        }
+                    }
+                    Button {
+                        width: parent.width / 3
+                        text: qsTr("Фото")
+                        highlighted: backgroundPanel.currentTab === "photo"
+                        onClicked: {
+                            backgroundPanel.currentTab = "photo"
                             backgroundPanel.updateBg()
                         }
                     }
@@ -308,6 +320,29 @@ Page {
                     }
                 }
 
+                // Photo Tab Content
+                Item {
+                    width: parent.width
+                    height: Theme.itemSizeExtraLarge * 1.5
+                    visible: backgroundPanel.currentTab === "photo"
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: Theme.paddingMedium
+
+                        Label {
+                            text: backgroundPanel.selectedImagePath === "" ? qsTr("Фото не выбрано") : qsTr("Фото выбрано")
+                            color: Theme.highlightColor
+                        }
+
+                        Button {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: qsTr("Выбрать из галереи")
+                            onClicked: pageStack.push(bgImagePickerComponent)
+                        }
+                    }
+                }
+
                 // Accept/Cancel buttons
                 Row {
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -357,6 +392,17 @@ Page {
             onSelectedContentPropertiesChanged: {
                 if (selectedContentProperties.filePath) {
                     pipelineManager.loadFromUri(selectedContentProperties.filePath)
+                }
+            }
+        }
+    }
+    Component {
+        id: bgImagePickerComponent
+        ImagePickerPage {
+            onSelectedContentPropertiesChanged: {
+                if (selectedContentProperties.filePath) {
+                    backgroundPanel.selectedImagePath = selectedContentProperties.filePath
+                    backgroundPanel.updateBg()
                 }
             }
         }
