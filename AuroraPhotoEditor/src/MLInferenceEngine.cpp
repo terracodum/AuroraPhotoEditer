@@ -295,7 +295,13 @@ int MLInferenceEngine::getModelOutputChannels(const std::string &modelPath) {
     std::vector<int64_t> shape = tensor_info.GetShape();
 
     if (shape.size() >= 4) {
-      return shape[1] > 0 ? shape[1] : 3;
+      // A symbolic (unresolved) channel dim isn't necessarily RGB — U2Net/
+      // RMBG-style segmentation exports declare *every* output dim
+      // (including channels) symbolically too, and defaulting them to 3
+      // here was misclassifying them as style-transfer models in
+      // PipelineManager::getAvailableStyles(). Report "unknown" instead so
+      // the == 3 check there safely excludes them.
+      return shape[1] > 0 ? shape[1] : -1;
     }
     return 1;
   } catch (...) {

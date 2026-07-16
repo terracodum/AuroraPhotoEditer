@@ -21,9 +21,31 @@ qt5_add_translation(QmFiles ${TsFiles})
 
 set(SOURCES
     qml/${short_name}.qml
+    qml/NeonTheme.qml
+    qml/Haptics.qml
+    qml/qmldir
     qml/cover/DefaultCoverPage.qml
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
+    qml/pages/NoticePage.qml
+    qml/pages/MaskEditPage.qml
+    qml/pages/BatchPage.qml
+    qml/components/GlyphIcon.qml
+    qml/components/GradientRect.qml
+    qml/components/GradientSlider.qml
+    qml/components/PalettePicker.qml
+    qml/components/GradientButton.qml
+    qml/components/GlyphButton.qml
+    qml/components/ToolButton.qml
+    qml/components/SegmentedControl.qml
+    qml/components/ToastBanner.qml
+    qml/components/BusyOverlay.qml
+    qml/components/ShimmerPlaceholder.qml
+    qml/components/PageHeaderBar.qml
+    qml/components/BottomSheet.qml
+    qml/components/BackgroundSheet.qml
+    qml/components/StyleSheet.qml
+    qml/components/HistoryPanel.qml
     src/main.cpp
     src/PipelineManager.cpp
     src/MLInferenceEngine.cpp
