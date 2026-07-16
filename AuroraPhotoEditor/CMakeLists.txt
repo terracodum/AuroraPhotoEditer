@@ -54,6 +54,7 @@ set(SOURCES
     src/MLProfiler.cpp
     src/EnhanceCommand.cpp
     src/BackgroundCommand.cpp
+    src/StyleTransferCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)

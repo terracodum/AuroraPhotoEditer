@@ -4,21 +4,29 @@ import "../"
 
 // "Фон" tool bottom sheet. Segmentation itself (U2Net via MLInferenceEngine)
 // is real and runs once per photo (PipelineManager::applyBackgroundRemoval());
-// this sheet only controls how the cut-out subject is recomposited —
-// solid color, two-color gradient, or blurred original background — all
-// three backed 1:1 by PipelineManager::updateBackground(mode, c1, c2, blur),
-// which recomputes the alpha blend from the cached mask without re-running
-// inference. There is no "replace with a photo" backend yet, so that part
-// of the original design mock was dropped rather than left as a fake button.
+// this sheet only controls how the cut-out subject is recomposited — solid
+// color, two-color gradient, blurred original background, or a custom
+// picked photo — all four backed 1:1 by
+// PipelineManager::updateBackground(mode, c1, c2, blur, imageUri), which
+// recomputes the alpha blend from the cached mask without re-running
+// inference (mode 3 = ModeCustomImage).
 BottomSheet {
     id: root
     title: qsTr("Фон")
 
-    // 0 = color, 1 = gradient, 2 = blur — matches BackgroundCommand::BackgroundMode.
+    // Picking a photo needs Sailfish.Pickers' ImagePickerPage, which has to
+    // be pushed via pageStack from MainPage.qml (a plain Item/DockedPanel
+    // like this one can't see MainPage's own `id`s) — so this just asks and
+    // lets onPickCustomImageRequested do the actual pageStack.push().
+    signal pickCustomImageRequested
+
+    // 0 = color, 1 = gradient, 2 = blur, 3 = custom image — matches
+    // BackgroundCommand::BackgroundMode.
     property int modeIndex: 2
     property color selectedColor1: "white"
     property color selectedColor2: "black"
     property int blurValue: 50
+    property string customImagePath: ""
     // Which gradient endpoint the PalettePicker below is currently editing.
     property int editingSlot: 1
 
@@ -27,8 +35,10 @@ BottomSheet {
             pipelineManager.updateBackground(0, selectedColor1, "transparent", 0)
         } else if (modeIndex === 1) {
             pipelineManager.updateBackground(1, selectedColor1, selectedColor2, 0)
-        } else {
+        } else if (modeIndex === 2) {
             pipelineManager.updateBackground(2, "transparent", "transparent", blurValue)
+        } else if (customImagePath !== "") {
+            pipelineManager.updateBackground(3, "transparent", "transparent", 0, customImagePath)
         }
     }
 
@@ -63,7 +73,7 @@ BottomSheet {
 
     SegmentedControl {
         width: parent.width
-        model: [qsTr("Цвет"), qsTr("Градиент"), qsTr("Блюр")]
+        model: [qsTr("Цвет"), qsTr("Градиент"), qsTr("Блюр"), qsTr("Фото")]
         currentIndex: root.modeIndex
         onActivated: {
             root.modeIndex = index
@@ -200,6 +210,56 @@ BottomSheet {
             onMoved: {
                 root.blurValue = newValue
                 root.updateBg()
+            }
+        }
+    }
+
+    // --- Фото: replace the background with a picked photo -----------
+    Column {
+        width: parent.width
+        opacity: root.modeIndex === 3 ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
+        spacing: NeonTheme.paddingMedium
+
+        Text {
+            width: parent.width
+            text: root.customImagePath === "" ? qsTr("Фото не выбрано") : qsTr("Фото выбрано")
+            color: NeonTheme.textSecondary
+            font.family: NeonTheme.fontBody
+            font.pixelSize: NeonTheme.fontSizeCaption
+        }
+
+        Rectangle {
+            width: parent.width
+            height: NeonTheme.px(88)
+            radius: NeonTheme.radiusMedium
+            color: NeonTheme.bgChip
+
+            Row {
+                anchors.centerIn: parent
+                spacing: NeonTheme.paddingSmall
+
+                GlyphIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: "image"
+                    width: NeonTheme.px(32)
+                    height: NeonTheme.px(32)
+                    strokeColor: NeonTheme.accentPurple
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Выбрать из галереи")
+                    color: NeonTheme.textPrimary
+                    font.family: NeonTheme.fontBody
+                    font.weight: NeonTheme.fontWeightMedium
+                    font.pixelSize: NeonTheme.fontSizeBody
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.pickCustomImageRequested()
             }
         }
     }

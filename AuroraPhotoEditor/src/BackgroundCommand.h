@@ -9,7 +9,8 @@ public:
     enum BackgroundMode {
         ModeColor,
         ModeGradient,
-        ModeBlur
+        ModeBlur,
+        ModeCustomImage
     };
     BackgroundCommand();
     ~BackgroundCommand() override;
@@ -21,12 +22,14 @@ public:
     void setColor1(const QColor& color) { m_color1 = color; }
     void setColor2(const QColor& color) { m_color2 = color; }
     void setBlurRadius(int radius) { m_blurRadius = radius; }
+    void setCustomImagePath(const QString& path) { m_customImagePath = path; }
 
 private:
     BackgroundMode m_mode = ModeBlur;
     QColor m_color1 = Qt::transparent;
     QColor m_color2 = Qt::transparent;
     int m_blurRadius = 50;
+    QString m_customImagePath;
 
     mutable QImage m_cachedInput;
     mutable QImage m_cachedMask;

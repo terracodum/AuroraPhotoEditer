@@ -32,6 +32,7 @@ class PipelineManager : public QObject {
     // History panel (design_handoff README, screen 7). Built from the same
     // command stack Undo/Reset already use, so it's real data, not mocked.
     Q_PROPERTY(QVariantList historySteps READ historySteps NOTIFY commandStackChanged)
+    Q_PROPERTY(qreal filterStrength READ filterStrength WRITE setFilterStrength NOTIFY filterStrengthChanged)
 
 public:
     explicit PipelineManager(QObject* parent = nullptr);
@@ -61,17 +62,25 @@ public:
     // Reverts the last applied command, restoring the previous image state. Thread-safe.
     Q_INVOKABLE bool undoLast();
 
+    qreal filterStrength() const { return m_filterStrength; }
+    void setFilterStrength(qreal strength);
+
     // Clears the command stack and resets the current image to the original. Thread-safe.
     Q_INVOKABLE void resetToOriginal();
 
     // Trigger commands from QML
     Q_INVOKABLE void applyBackgroundRemoval();
-    Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius);
+    // mode: 0=color, 1=gradient, 2=blur, 3=custom image (imageUri required).
+    Q_INVOKABLE void updateBackground(int mode, const QColor& c1, const QColor& c2, int blurRadius, const QString& imageUri = QString());
 
     // Runs the built-in CLAHE + Gray World auto-enhance (EnhanceCommand) in
     // the background. This is the real wiring for the "Улучшение" tool —
     // QML cannot construct ImageEditorCommand subclasses itself.
     Q_INVOKABLE void applyEnhance();
+    Q_INVOKABLE void applyStyle(const QString& modelName);
+    
+    // Returns a list of available styles dynamically loaded from the models directory
+    Q_INVOKABLE QVariantList getAvailableStyles();
 
     // Returns the number of commands currently in the stack. Thread-safe.
     // Q_INVOKABLE so QML (PullDownMenu badge, Batch/History panels) can
@@ -113,8 +122,13 @@ signals:
     // finished, so the UI can show "previous operation canceled".
     void operationCanceled();
 
+    // Emitted when the filter strength changes
+    void filterStrengthChanged(qreal strength);
+
 private:
     void setIsProcessing(bool processing);
+    
+    QImage blendImages(const QImage& bottom, const QImage& top, qreal alpha) const;
 
     struct StackElement {
         QSharedPointer<ImageEditorCommand> command;
@@ -125,6 +139,11 @@ private:
     QImage m_original;
     QImage m_current;
     QList<StackElement> m_commandStack;
+
+    QVariantList m_availableStylesCache;
+    bool m_stylesCached = false;
+
+    qreal m_filterStrength = 1.0;
 
     ExportWorker* m_exportWorker;
     QThread m_exportThread;
@@ -137,4 +156,6 @@ private:
     QColor m_pendingC1;
     QColor m_pendingC2;
     int m_pendingBlur = 0;
+    QString m_pendingImageUri;
 };
+

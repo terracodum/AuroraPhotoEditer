@@ -234,7 +234,9 @@ Page {
     DockedPanel {
         id: toolsPanel
         width: parent.width
-        height: NeonTheme.toolPanelHeight
+        // Taller when the (real) filter-strength control is showing —
+        // it only applies once at least one effect is on the stack.
+        height: pipelineManager.canUndo ? NeonTheme.toolPanelHeight + NeonTheme.px(110) : NeonTheme.toolPanelHeight
         dock: Dock.Bottom
         open: pipelineManager.hasImage
 
@@ -243,48 +245,95 @@ Page {
             color: NeonTheme.bgBase
         }
 
-        Row {
-            id: toolsRow
+        Column {
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.bottom: parent.bottom
             anchors.leftMargin: NeonTheme.paddingMedium
             anchors.rightMargin: NeonTheme.paddingMedium
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: NeonTheme.paddingMedium
+            anchors.bottomMargin: NeonTheme.paddingMedium
+            spacing: NeonTheme.paddingSmall
 
-            ToolButton {
-                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
-                height: NeonTheme.px(132)
-                label: qsTr("Фон")
-                iconName: "layers"
-                accent: NeonTheme.accentPurple
-                enabled: !pipelineManager.isProcessing
-                onClicked: {
-                    mainPage.currentOperationLabel = qsTr("Фон")
-                    pipelineManager.applyBackgroundRemoval()
-                    backgroundSheet.show()
+            // Blends the last applied effect back toward the state before
+            // it (pipelineManager.filterStrength, real — recomputes a plain
+            // alpha blend, no re-inference) — same control regardless of
+            // which tool produced the current top-of-stack result.
+            Column {
+                width: parent.width
+                visible: pipelineManager.canUndo
+                spacing: NeonTheme.paddingTiny
+
+                Item {
+                    width: parent.width
+                    height: filterStrengthLabel.height
+
+                    Text {
+                        id: filterStrengthLabel
+                        anchors.left: parent.left
+                        text: qsTr("Сила эффекта")
+                        color: NeonTheme.textSecondary
+                        font.family: NeonTheme.fontBody
+                        font.weight: NeonTheme.fontWeightMedium
+                        font.pixelSize: NeonTheme.fontSizeCaption
+                    }
+                    Text {
+                        anchors.right: parent.right
+                        text: Math.round(pipelineManager.filterStrength * 100) + "%"
+                        color: NeonTheme.textTertiary
+                        font.family: NeonTheme.fontBody
+                        font.pixelSize: NeonTheme.fontSizeCaption
+                    }
+                }
+
+                GradientSlider {
+                    width: parent.width
+                    minimumValue: 0
+                    maximumValue: 100
+                    stepSize: 1
+                    value: pipelineManager.filterStrength * 100
+                    onMoved: pipelineManager.filterStrength = newValue / 100
                 }
             }
-            ToolButton {
-                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
-                height: NeonTheme.px(132)
-                label: qsTr("Улучшение")
-                iconName: "spark"
-                accent: NeonTheme.accentGreen
-                enabled: !pipelineManager.isProcessing
-                onClicked: {
-                    mainPage.currentOperationLabel = qsTr("Улучшение")
-                    pipelineManager.applyEnhance()
+
+            Row {
+                id: toolsRow
+                width: parent.width
+                spacing: NeonTheme.paddingMedium
+
+                ToolButton {
+                    width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
+                    height: NeonTheme.px(132)
+                    label: qsTr("Фон")
+                    iconName: "layers"
+                    accent: NeonTheme.accentPurple
+                    enabled: !pipelineManager.isProcessing
+                    onClicked: {
+                        mainPage.currentOperationLabel = qsTr("Фон")
+                        pipelineManager.applyBackgroundRemoval()
+                        backgroundSheet.show()
+                    }
                 }
-            }
-            ToolButton {
-                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
-                height: NeonTheme.px(132)
-                label: qsTr("Стиль")
-                iconName: "palette"
-                accent: NeonTheme.accentPink
-                enabled: !pipelineManager.isProcessing
-                onClicked: styleSheet.show()
+                ToolButton {
+                    width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
+                    height: NeonTheme.px(132)
+                    label: qsTr("Улучшение")
+                    iconName: "spark"
+                    accent: NeonTheme.accentGreen
+                    enabled: !pipelineManager.isProcessing
+                    onClicked: {
+                        mainPage.currentOperationLabel = qsTr("Улучшение")
+                        pipelineManager.applyEnhance()
+                    }
+                }
+                ToolButton {
+                    width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
+                    height: NeonTheme.px(132)
+                    label: qsTr("Стиль")
+                    iconName: "palette"
+                    accent: NeonTheme.accentPink
+                    enabled: !pipelineManager.isProcessing
+                    onClicked: styleSheet.show()
+                }
             }
         }
     }
@@ -341,6 +390,21 @@ Page {
         }
     }
 
+    // Custom-background photo picker (BackgroundSheet's "Фото" mode) —
+    // separate from the main imagePickerComponent above.
+    Component {
+        id: bgImagePickerComponent
+        ImagePickerPage {
+            onSelectedContentPropertiesChanged: {
+                if (selectedContentProperties.filePath) {
+                    backgroundSheet.customImagePath = selectedContentProperties.filePath
+                    backgroundSheet.updateBg()
+                    pageStack.pop()
+                }
+            }
+        }
+    }
+
     HistoryPanel {
         id: historyPanel
         onSaveProjectRequested: toast.show(qsTr("Проект сохранён (демо-режим)"), "success")
@@ -348,9 +412,14 @@ Page {
 
     BackgroundSheet {
         id: backgroundSheet
+        onPickCustomImageRequested: pageStack.push(bgImagePickerComponent)
     }
 
     StyleSheet {
         id: styleSheet
+        onStyleSelected: {
+            mainPage.currentOperationLabel = qsTr("Стиль")
+            pipelineManager.applyStyle(file)
+        }
     }
 }

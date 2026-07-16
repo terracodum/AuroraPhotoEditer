@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <memory>
 #include <opencv2/opencv.hpp>
+#include <QImageReader>
 
 BackgroundCommand::BackgroundCommand() = default;
 BackgroundCommand::~BackgroundCommand() = default;
@@ -141,6 +142,29 @@ QImage BackgroundCommand::execute(const QImage& input, MLProfiler* profiler) con
             }
             bgImage = small.scaled(input.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             bgImage = bgImage.convertToFormat(QImage::Format_ARGB32);
+        } else {
+            bgImage = input.convertToFormat(QImage::Format_ARGB32);
+        }
+    } else if (m_mode == ModeCustomImage) {
+        if (!m_customImagePath.isEmpty()) {
+            QString path = m_customImagePath;
+            if (path.startsWith("file://")) {
+                path = path.mid(7);
+            }
+            QImageReader reader(path);
+            reader.setAutoTransform(true);
+            QImage customImg = reader.read();
+            
+            if (!customImg.isNull()) {
+                QImage scaled = customImg.scaled(input.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+                int x = (scaled.width() - input.width()) / 2;
+                int y = (scaled.height() - input.height()) / 2;
+                bgImage = scaled.copy(x, y, input.width(), input.height());
+                bgImage = bgImage.convertToFormat(QImage::Format_ARGB32);
+            } else {
+                qWarning() << "Failed to load custom background image:" << path;
+                bgImage = input.convertToFormat(QImage::Format_ARGB32);
+            }
         } else {
             bgImage = input.convertToFormat(QImage::Format_ARGB32);
         }
