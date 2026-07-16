@@ -22,62 +22,67 @@ QImage EnhanceCommand::execute(const QImage& input, MLProfiler* profiler) const 
     cv::Mat rgbMat(image.height(), image.width(), CV_8UC3,
                    image.bits(), image.bytesPerLine());
 
-    if (profiler) profiler->startPhase("LAB_Conversion_and_CLAHE");
-
-    // Convert RGB to LAB
+    if (profiler) profiler->startPhase("Adaptive_Contrast");
+    
+    // 1. Adaptive Soft Contrast (Gentle CLAHE)
     cv::Mat labMat;
     cv::cvtColor(rgbMat, labMat, cv::COLOR_RGB2Lab);
-
-    // Split channels
+    
     std::vector<cv::Mat> labChannels;
     cv::split(labMat, labChannels);
-
-    // Apply CLAHE to L channel
-    // Clip limit 2.0 and grid size 8x8 are good defaults for shadow/highlight recovery
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+    
+    // Lowered clip limit to 1.2 for a gentle shadow/highlight recovery
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(1.2, cv::Size(8, 8));
     clahe->apply(labChannels[0], labChannels[0]);
-
-    // Merge channels back
+    
     cv::merge(labChannels, labMat);
+    
+    cv::Mat enhancedRgb;
+    cv::cvtColor(labMat, enhancedRgb, cv::COLOR_Lab2RGB);
+    
+    if (profiler) profiler->startPhase("Smart_Vibrancy_Boost");
 
-    // Convert LAB back to RGB
-    cv::Mat claheRgbMat;
-    cv::cvtColor(labMat, claheRgbMat, cv::COLOR_Lab2RGB);
+    // 2. Smart Vibrancy Boost
+    cv::Mat hsvMat;
+    cv::cvtColor(enhancedRgb, hsvMat, cv::COLOR_RGB2HSV);
+    std::vector<cv::Mat> hsvChannels;
+    cv::split(hsvMat, hsvChannels);
+    
+    // Create a non-linear Look-Up Table (LUT) for saturation
+    // It boosts muted colors (low saturation) more than already vibrant colors
+    uchar lut[256];
+    float vibranceFactor = 0.35f; // 35% max boost
+    for (int i = 0; i < 256; i++) {
+        // Curve: S_new = S_old + (255 - S_old) * (S_old/255) * factor
+        float normalizedS = i / 255.0f;
+        float boost = (1.0f - normalizedS) * normalizedS * 255.0f * vibranceFactor;
+        int s = static_cast<int>(i + boost);
+        lut[i] = cv::saturate_cast<uchar>(s);
+    }
+    cv::LUT(hsvChannels[1], cv::Mat(1, 256, CV_8UC1, lut), hsvChannels[1]);
+    
+    cv::merge(hsvChannels, hsvMat);
+    cv::cvtColor(hsvMat, enhancedRgb, cv::COLOR_HSV2RGB);
+    
+    if (profiler) profiler->startPhase("Unsharp_Mask");
 
-    if (profiler) profiler->startPhase("WhiteBalance_Correction");
-
-    // White balance correction (Gray World Assumption)
-    cv::Scalar means = cv::mean(claheRgbMat);
-    double meanR = means[0];
-    double meanG = means[1];
-    double meanB = means[2];
-
-    double overallMean = (meanR + meanG + meanB) / 3.0;
-
-    double scaleR = (meanR > 0) ? (overallMean / meanR) : 1.0;
-    double scaleG = (meanG > 0) ? (overallMean / meanG) : 1.0;
-    double scaleB = (meanB > 0) ? (overallMean / meanB) : 1.0;
-
-    std::vector<cv::Mat> rgbChannels;
-    cv::split(claheRgbMat, rgbChannels);
-
-    // Apply scaling
-    rgbChannels[0].convertTo(rgbChannels[0], CV_8U, scaleR);
-    rgbChannels[1].convertTo(rgbChannels[1], CV_8U, scaleG);
-    rgbChannels[2].convertTo(rgbChannels[2], CV_8U, scaleB);
-
-    cv::Mat resultRgbMat;
-    cv::merge(rgbChannels, resultRgbMat);
+    // 3. Crispness (Unsharp Mask)
+    cv::Mat blurred;
+    cv::GaussianBlur(enhancedRgb, blurred, cv::Size(0, 0), 3.0);
+    cv::Mat sharpened;
+    // sharpened = original + (original - blurred) * amount
+    // Here we use addWeighted: 1.5 * original - 0.5 * blurred
+    cv::addWeighted(enhancedRgb, 1.3, blurred, -0.3, 0, sharpened);
 
     if (profiler) profiler->startPhase("FormatConversion_MatToQImage");
 
     // Convert back to QImage
-    QImage resultImage((const uchar*)resultRgbMat.data,
-                       resultRgbMat.cols, resultRgbMat.rows,
-                       resultRgbMat.step,
+    QImage resultImage((const uchar*)sharpened.data,
+                       sharpened.cols, sharpened.rows,
+                       sharpened.step,
                        QImage::Format_RGB888);
     
-    // Deep copy because resultRgbMat memory will be destroyed
+    // Deep copy because sharpened memory will be destroyed when it goes out of scope
     QImage finalImage = resultImage.copy();
 
     if (profiler) profiler->endPhase();
