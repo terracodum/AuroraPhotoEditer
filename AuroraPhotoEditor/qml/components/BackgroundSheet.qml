@@ -1,45 +1,35 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import Sailfish.Pickers 1.0
 import "../"
 
-// "Фон" tool bottom sheet (README screen 4). The real ML segmentation
-// (BackgroundReplaceCommand / ISSUE-4.1-4.3, ISSUE-6.1) is not implemented
-// in the C++ backend yet, so every action below is a UI-only mock behind a
-// short fake delay (`busy`), clearly marked "MOCK (ISSUE-4.x)" — swap the
-// body of applyPreset()/applyCustomBackground() for a real
-// pipelineManager.applyBackgroundXxx(...) call once that command exists.
-// The intensity slider intentionally does NOT re-trigger `busy`: per
-// ISSUE-4.3, moving it should only recompute Alpha Blending from a cached
-// mask, never re-run inference.
+// "Фон" tool bottom sheet. Segmentation itself (U2Net via MLInferenceEngine)
+// is real and runs once per photo (PipelineManager::applyBackgroundRemoval());
+// this sheet only controls how the cut-out subject is recomposited —
+// solid color, two-color gradient, or blurred original background — all
+// three backed 1:1 by PipelineManager::updateBackground(mode, c1, c2, blur),
+// which recomputes the alpha blend from the cached mask without re-running
+// inference. There is no "replace with a photo" backend yet, so that part
+// of the original design mock was dropped rather than left as a fake button.
 BottomSheet {
     id: root
     title: qsTr("Фон")
 
-    property bool busy: false
-    signal maskEditRequested
+    // 0 = color, 1 = gradient, 2 = blur — matches BackgroundCommand::BackgroundMode.
+    property int modeIndex: 2
+    property color selectedColor1: "white"
+    property color selectedColor2: "black"
+    property int blurValue: 50
+    // Which gradient endpoint the PalettePicker below is currently editing.
+    property int editingSlot: 1
 
-    property int modeIndex: 0
-    property real intensity: 0.5
-
-    Timer {
-        id: mockDelay
-        interval: 550
-        onTriggered: root.busy = false
-    }
-
-    function applyPreset(presetName) {
-        // MOCK (ISSUE-4.1/4.3): no real segmentation model wired up yet.
-        root.busy = true
-        mockDelay.restart()
-    }
-
-    function applyCustomBackground(filePath) {
-        // MOCK (ISSUE-6.1): real impl crops/centers the picked photo
-        // (Aspect Fill) in C++ and re-runs Alpha Blending against the
-        // cached mask.
-        root.busy = true
-        mockDelay.restart()
+    function updateBg() {
+        if (modeIndex === 0) {
+            pipelineManager.updateBackground(0, selectedColor1, "transparent", 0)
+        } else if (modeIndex === 1) {
+            pipelineManager.updateBackground(1, selectedColor1, selectedColor2, 0)
+        } else {
+            pipelineManager.updateBackground(2, "transparent", "transparent", blurValue)
+        }
     }
 
     Row {
@@ -60,12 +50,6 @@ BottomSheet {
             font.family: NeonTheme.fontBody
             font.pixelSize: NeonTheme.fontSizeCaption
         }
-        BusyIndicator {
-            anchors.verticalCenter: parent.verticalCenter
-            running: root.busy
-            visible: root.busy
-            size: BusyIndicatorSize.Small
-        }
     }
 
     Text {
@@ -79,92 +63,133 @@ BottomSheet {
 
     SegmentedControl {
         width: parent.width
-        model: [qsTr("Удалить"), qsTr("Размыть"), qsTr("Заменить")]
+        model: [qsTr("Цвет"), qsTr("Градиент"), qsTr("Блюр")]
         currentIndex: root.modeIndex
         onActivated: {
             root.modeIndex = index
-            root.applyPreset("mode-" + index)
+            root.updateBg()
         }
     }
 
-    Text {
+    // --- Цвет: single-color palette ---------------------------------
+    PalettePicker {
         width: parent.width
-        text: qsTr("Интенсивность")
-        color: NeonTheme.textSecondary
-        font.family: NeonTheme.fontBody
-        font.weight: NeonTheme.fontWeightMedium
-        font.pixelSize: NeonTheme.fontSizeCaption
+        visible: root.modeIndex === 0
+        color: root.selectedColor1
+        onColorPicked: {
+            root.selectedColor1 = pickedColor
+            root.updateBg()
+        }
     }
 
-    Slider {
+    // --- Градиент: two endpoints, edited via the same palette --------
+    Column {
         width: parent.width
-        minimumValue: 0.0
-        maximumValue: 1.0
-        value: root.intensity
-        // Alpha-blend-only recompute — never touches `busy` (no re-inference).
-        onValueChanged: root.intensity = value
-    }
+        visible: root.modeIndex === 1
+        spacing: NeonTheme.paddingMedium
 
-    Text {
-        width: parent.width
-        text: qsTr("Пресеты")
-        color: NeonTheme.textSecondary
-        font.family: NeonTheme.fontBody
-        font.weight: NeonTheme.fontWeightMedium
-        font.pixelSize: NeonTheme.fontSizeCaption
-    }
+        Row {
+            width: parent.width
+            spacing: NeonTheme.paddingMedium
 
-    Flow {
-        width: parent.width
-        spacing: NeonTheme.paddingSmall
-
-        Repeater {
-            model: [qsTr("Портрет"), qsTr("Студия"), qsTr("Улица")]
-            delegate: Rectangle {
-                height: NeonTheme.px(64)
-                width: presetLabel.implicitWidth + NeonTheme.paddingXLarge
-                radius: NeonTheme.radiusPill
-                color: NeonTheme.bgChip
-
-                Text {
-                    id: presetLabel
-                    anchors.centerIn: parent
-                    text: modelData
-                    color: NeonTheme.textPrimary
-                    font.family: NeonTheme.fontBody
-                    font.weight: NeonTheme.fontWeightMedium
-                    font.pixelSize: NeonTheme.fontSizeCaption
-                }
+            Rectangle {
+                width: NeonTheme.px(64)
+                height: width
+                radius: width / 2
+                color: root.selectedColor1
+                border.width: root.editingSlot === 1 ? 3 : 1
+                border.color: root.editingSlot === 1 ? NeonTheme.accentPurple : Qt.rgba(1, 1, 1, 0.2)
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.applyPreset(modelData)
+                    onClicked: root.editingSlot = 1
+                }
+            }
+
+            GradientRect {
+                width: parent.width - NeonTheme.px(64) * 2 - NeonTheme.paddingMedium * 2
+                height: NeonTheme.px(64)
+                radius: NeonTheme.radiusMedium
+                anchors.verticalCenter: parent.verticalCenter
+                stops: [
+                    { position: 0.0, color: root.selectedColor1 },
+                    { position: 1.0, color: root.selectedColor2 }
+                ]
+            }
+
+            Rectangle {
+                width: NeonTheme.px(64)
+                height: width
+                radius: width / 2
+                color: root.selectedColor2
+                border.width: root.editingSlot === 2 ? 3 : 1
+                border.color: root.editingSlot === 2 ? NeonTheme.accentPurple : Qt.rgba(1, 1, 1, 0.2)
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: root.editingSlot = 2
                 }
             }
         }
 
-        Rectangle {
-            height: NeonTheme.px(64)
-            width: customLabel.implicitWidth + NeonTheme.paddingXLarge
-            radius: NeonTheme.radiusPill
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: NeonTheme.gradientStart }
-                GradientStop { position: 1.0; color: NeonTheme.gradientEnd }
+        Text {
+            width: parent.width
+            text: root.editingSlot === 1 ? qsTr("Редактируется: первый цвет") : qsTr("Редактируется: второй цвет")
+            color: NeonTheme.textTertiary
+            font.family: NeonTheme.fontBody
+            font.pixelSize: NeonTheme.fontSizeCaption
+        }
+
+        PalettePicker {
+            width: parent.width
+            color: root.editingSlot === 1 ? root.selectedColor1 : root.selectedColor2
+            onColorPicked: {
+                if (root.editingSlot === 1)
+                    root.selectedColor1 = pickedColor
+                else
+                    root.selectedColor2 = pickedColor
+                root.updateBg()
             }
+        }
+    }
+
+    // --- Блюр: intensity -------------------------------------------
+    Column {
+        width: parent.width
+        visible: root.modeIndex === 2
+        spacing: NeonTheme.paddingTiny
+
+        Item {
+            width: parent.width
+            height: intensityLabel.height
 
             Text {
-                id: customLabel
-                anchors.centerIn: parent
-                text: qsTr("Своё фото из галереи")
-                color: NeonTheme.textPrimary
+                id: intensityLabel
+                anchors.left: parent.left
+                text: qsTr("Интенсивность")
+                color: NeonTheme.textSecondary
                 font.family: NeonTheme.fontBody
-                font.weight: NeonTheme.fontWeightBold
+                font.weight: NeonTheme.fontWeightMedium
                 font.pixelSize: NeonTheme.fontSizeCaption
             }
+            Text {
+                anchors.right: parent.right
+                text: root.blurValue
+                color: NeonTheme.textTertiary
+                font.family: NeonTheme.fontBody
+                font.pixelSize: NeonTheme.fontSizeCaption
+            }
+        }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: pageStack.push(customBackgroundPicker)
+        GradientSlider {
+            width: parent.width
+            minimumValue: 0
+            maximumValue: 100
+            stepSize: 1
+            value: root.blurValue
+            onMoved: {
+                root.blurValue = newValue
+                root.updateBg()
             }
         }
     }
@@ -175,77 +200,59 @@ BottomSheet {
         color: NeonTheme.bgChip
     }
 
-    Text {
+    Row {
         width: parent.width
-        text: qsTr("Точная правка маски")
-        color: NeonTheme.textSecondary
-        font.family: NeonTheme.fontBody
-        font.weight: NeonTheme.fontWeightMedium
-        font.pixelSize: NeonTheme.fontSizeCaption
-    }
+        spacing: NeonTheme.paddingMedium
 
-    Rectangle {
-        width: parent.width
-        height: NeonTheme.px(88)
-        radius: NeonTheme.radiusMedium
-        color: NeonTheme.bgChip
+        Rectangle {
+            width: (parent.width - NeonTheme.paddingMedium) / 2
+            height: NeonTheme.px(88)
+            radius: NeonTheme.radiusMedium
+            color: NeonTheme.bgChip
 
-        Row {
-            anchors.centerIn: parent
-            spacing: NeonTheme.paddingSmall
-
-            GlyphIcon {
-                anchors.verticalCenter: parent.verticalCenter
-                name: "brush"
-                width: NeonTheme.px(32)
-                height: NeonTheme.px(32)
-                strokeColor: NeonTheme.accentPurple
-            }
             Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: qsTr("Кисть/ластик — подправить вручную")
+                anchors.centerIn: parent
+                text: qsTr("Вернуться")
                 color: NeonTheme.textPrimary
-                font.family: NeonTheme.fontBody
-                font.weight: NeonTheme.fontWeightMedium
-                font.pixelSize: NeonTheme.fontSizeBody
+                font.family: NeonTheme.fontDisplay
+                font.weight: NeonTheme.fontWeightBold
+                font.pixelSize: NeonTheme.fontSizeButton
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    pipelineManager.undoLast()
+                    root.hide()
+                }
             }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.maskEditRequested()
-        }
-    }
+        Item {
+            width: (parent.width - NeonTheme.paddingMedium) / 2
+            height: NeonTheme.px(88)
 
-    Rectangle {
-        width: parent.width
-        height: NeonTheme.px(96)
-        radius: NeonTheme.radiusMedium
-        color: NeonTheme.bgChip
+            GradientRect {
+                anchors.fill: parent
+                radius: NeonTheme.radiusMedium
+                stops: [
+                    { position: 0.0, color: NeonTheme.gradientStart },
+                    { position: 1.0, color: NeonTheme.gradientEnd }
+                ]
+            }
 
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("Отмена")
-            color: NeonTheme.textPrimary
-            font.family: NeonTheme.fontDisplay
-            font.weight: NeonTheme.fontWeightBold
-            font.pixelSize: NeonTheme.fontSizeButton
-        }
+            Text {
+                anchors.centerIn: parent
+                text: qsTr("Применить")
+                color: NeonTheme.textPrimary
+                font.family: NeonTheme.fontDisplay
+                font.weight: NeonTheme.fontWeightBold
+                font.pixelSize: NeonTheme.fontSizeButton
+            }
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.hide()
-        }
-    }
-
-    Component {
-        id: customBackgroundPicker
-        ImagePickerPage {
-            onSelectedContentPropertiesChanged: {
-                if (selectedContentProperties.filePath) {
-                    root.applyCustomBackground(selectedContentProperties.filePath)
-                    pageStack.pop()
-                }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.hide()
             }
         }
     }

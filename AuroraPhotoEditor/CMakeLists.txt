@@ -30,6 +30,9 @@ set(SOURCES
     qml/pages/MaskEditPage.qml
     qml/pages/BatchPage.qml
     qml/components/GlyphIcon.qml
+    qml/components/GradientRect.qml
+    qml/components/GradientSlider.qml
+    qml/components/PalettePicker.qml
     qml/components/GradientButton.qml
     qml/components/GlyphButton.qml
     qml/components/ToolButton.qml

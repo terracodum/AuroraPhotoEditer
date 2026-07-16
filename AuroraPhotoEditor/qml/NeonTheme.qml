@@ -81,7 +81,7 @@ QtObject {
 
     readonly property int headerHeight: px(140)
     readonly property int toolPanelHeight: px(180)
-    readonly property int iconButtonSize: px(52)
+    readonly property int iconButtonSize: px(62)
     readonly property int ctaHeight: px(92)
     readonly property int minTouchTarget: px(64)
 

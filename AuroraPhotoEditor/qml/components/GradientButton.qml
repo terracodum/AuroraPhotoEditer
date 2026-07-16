@@ -2,8 +2,10 @@ import QtQuick 2.0
 import "../"
 
 // Primary CTA "pill" button: gradient fill, radius 999 (see NeonTheme /
-// README Design Tokens - "Основной градиент действия").
-Rectangle {
+// README Design Tokens - "Основной градиент действия"). The fill is a
+// GradientRect (Canvas-based) rather than a plain `Rectangle.gradient`, so
+// it paints left-to-right instead of top-to-bottom (see GradientRect.qml).
+Item {
     id: root
 
     property string text: ""
@@ -14,12 +16,15 @@ Rectangle {
 
     width: parent ? parent.width : NeonTheme.px(400)
     height: NeonTheme.ctaHeight
-    radius: NeonTheme.radiusPill
     opacity: enabled ? 1.0 : 0.4
 
-    gradient: Gradient {
-        GradientStop { position: 0.0; color: NeonTheme.gradientStart }
-        GradientStop { position: 1.0; color: NeonTheme.gradientEnd }
+    GradientRect {
+        anchors.fill: parent
+        radius: NeonTheme.radiusPill
+        stops: [
+            { position: 0.0, color: NeonTheme.gradientStart },
+            { position: 1.0, color: NeonTheme.gradientEnd }
+        ]
     }
 
     Text {

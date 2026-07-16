@@ -9,8 +9,6 @@ Page {
     objectName: "mainPage"
     allowedOrientations: Orientation.All
 
-    property string activeTool: ""
-
     // Label shown under the busy spinner — set right before triggering the
     // matching pipelineManager call, so it stays correct even if a later
     // tool supersedes the running one (see operationCanceled handling below).
@@ -24,7 +22,8 @@ Page {
     PageHeaderBar {
         id: header
         objectName: "pageHeader"
-        title: qsTr("PhotoEditor")
+        // Brand name — intentionally not qsTr()'d, shown as-is in every locale.
+        title: "ZeroPhotos"
 
         GlyphButton {
             objectName: "undoButton"
@@ -40,7 +39,8 @@ Page {
         }
         GlyphButton {
             objectName: "saveButton"
-            iconName: "save"
+            iconName: "save-black"
+            bgColor: "#EC4899"
             visible: pipelineManager.hasImage
             width: visible ? NeonTheme.iconButtonSize : 0
             onClicked: pipelineManager.exportImage()
@@ -205,7 +205,7 @@ Page {
         width: parent.width
         height: NeonTheme.toolPanelHeight
         dock: Dock.Bottom
-        open: pipelineManager.hasImage && activeTool === ""
+        open: pipelineManager.hasImage
 
         Rectangle {
             anchors.fill: parent
@@ -213,27 +213,29 @@ Page {
         }
 
         Row {
-            anchors.centerIn: parent
+            id: toolsRow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: NeonTheme.paddingMedium
+            anchors.rightMargin: NeonTheme.paddingMedium
+            anchors.verticalCenter: parent.verticalCenter
             spacing: NeonTheme.paddingMedium
 
             ToolButton {
-                width: NeonTheme.px(150)
+                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
                 height: NeonTheme.px(132)
                 label: qsTr("Фон")
                 iconName: "layers"
                 accent: NeonTheme.accentPurple
                 enabled: !pipelineManager.isProcessing
                 onClicked: {
-                    // Real background-removal backend (updateBackground()) is
-                    // wired to the legacy backgroundPanel below, not to the
-                    // new BackgroundSheet mock — see the note above that panel.
                     mainPage.currentOperationLabel = qsTr("Фон")
-                    activeTool = "background"
                     pipelineManager.applyBackgroundRemoval()
+                    backgroundSheet.show()
                 }
             }
             ToolButton {
-                width: NeonTheme.px(150)
+                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
                 height: NeonTheme.px(132)
                 label: qsTr("Улучшение")
                 iconName: "spark"
@@ -245,173 +247,13 @@ Page {
                 }
             }
             ToolButton {
-                width: NeonTheme.px(150)
+                width: (toolsRow.width - NeonTheme.paddingMedium * 2) / 3
                 height: NeonTheme.px(132)
                 label: qsTr("Стиль")
                 iconName: "palette"
                 accent: NeonTheme.accentPink
                 enabled: !pipelineManager.isProcessing
                 onClicked: styleSheet.show()
-            }
-        }
-    }
-
-    // NOTE: predates the neon-pop redesign and is intentionally not
-    // restyled with NeonTheme — kept as-is (rather than swapped for the new
-    // BackgroundSheet mock) because it is the only place the real
-    // background-removal/color/blur backend (updateBackground()) is wired
-    // up end-to-end. Restyle in place once BackgroundSheet grows real
-    // backend calls.
-    DockedPanel {
-        id: backgroundPanel
-        width: parent.width
-        height: Theme.itemSizeExtraLarge * 4
-        dock: Dock.Bottom
-        open: activeTool === "background"
-
-        property string currentTab: "color"
-        property string selectedColor1: "white"
-        property string selectedColor2: "black"
-        property bool isGradient: false
-
-        function updateBg() {
-            if (currentTab === "color") {
-                if (isGradient) {
-                    pipelineManager.updateBackground(1, selectedColor1, selectedColor2, 0)
-                } else {
-                    pipelineManager.updateBackground(0, selectedColor1, "transparent", 0)
-                }
-            } else {
-                pipelineManager.updateBackground(2, "transparent", "transparent", blurSlider.value)
-            }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            color: Theme.overlayBackgroundColor
-
-            Column {
-                anchors.fill: parent
-                spacing: Theme.paddingSmall
-
-                // Tabs
-                Row {
-                    width: parent.width
-                    height: Theme.itemSizeMedium
-                    
-                    Button {
-                        width: parent.width / 2
-                        text: qsTr("Цвет")
-                        highlighted: backgroundPanel.currentTab === "color"
-                        onClicked: {
-                            backgroundPanel.currentTab = "color"
-                            backgroundPanel.updateBg()
-                        }
-                    }
-                    Button {
-                        width: parent.width / 2
-                        text: qsTr("Размытие")
-                        highlighted: backgroundPanel.currentTab === "blur"
-                        onClicked: {
-                            backgroundPanel.currentTab = "blur"
-                            backgroundPanel.updateBg()
-                        }
-                    }
-                }
-
-                // Color Tab Content
-                Item {
-                    width: parent.width
-                    height: Theme.itemSizeExtraLarge * 1.5
-                    visible: backgroundPanel.currentTab === "color"
-
-                    Column {
-                        anchors.fill: parent
-                        spacing: Theme.paddingSmall
-                        
-                        TextSwitch {
-                            text: qsTr("Градиент")
-                            checked: backgroundPanel.isGradient
-                            onCheckedChanged: {
-                                backgroundPanel.isGradient = checked
-                                backgroundPanel.updateBg()
-                            }
-                        }
-
-                        Row {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: Theme.paddingMedium
-                            
-                            Repeater {
-                                model: ["white", "black", "red", "green", "blue", "yellow"]
-                                Rectangle {
-                                    width: Theme.iconSizeMedium
-                                    height: Theme.iconSizeMedium
-                                    color: modelData
-                                    radius: width / 2
-                                    border.color: (backgroundPanel.selectedColor1 === modelData || (backgroundPanel.isGradient && backgroundPanel.selectedColor2 === modelData)) ? Theme.highlightColor : Theme.primaryColor
-                                    border.width: (backgroundPanel.selectedColor1 === modelData || (backgroundPanel.isGradient && backgroundPanel.selectedColor2 === modelData)) ? 4 : 1
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: {
-                                            if (backgroundPanel.isGradient) {
-                                                if (backgroundPanel.selectedColor1 === modelData) {
-                                                    backgroundPanel.selectedColor2 = modelData
-                                                } else {
-                                                    backgroundPanel.selectedColor1 = modelData
-                                                }
-                                            } else {
-                                                backgroundPanel.selectedColor1 = modelData
-                                            }
-                                            backgroundPanel.updateBg()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Blur Tab Content
-                Item {
-                    width: parent.width
-                    height: Theme.itemSizeExtraLarge * 1.5
-                    visible: backgroundPanel.currentTab === "blur"
-
-                    Slider {
-                        id: blurSlider
-                        width: parent.width - Theme.paddingLarge * 2
-                        anchors.centerIn: parent
-                        minimumValue: 0
-                        maximumValue: 100
-                        value: 50
-                        stepSize: 1
-                        label: qsTr("Интенсивность")
-                        valueText: value
-                        onValueChanged: backgroundPanel.updateBg()
-                    }
-                }
-
-                // Accept/Cancel buttons
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Theme.paddingLarge
-
-                    Button {
-                        text: qsTr("Вернуться")
-                        onClicked: {
-                            pipelineManager.undoLast()
-                            activeTool = ""
-                        }
-                    }
-
-                    Button {
-                        text: qsTr("Применить")
-                        onClicked: {
-                            activeTool = ""
-                        }
-                    }
-                }
             }
         }
     }
@@ -470,10 +312,6 @@ Page {
 
     BackgroundSheet {
         id: backgroundSheet
-        onMaskEditRequested: {
-            backgroundSheet.hide()
-            pageStack.push(Qt.resolvedUrl("MaskEditPage.qml"))
-        }
     }
 
     StyleSheet {

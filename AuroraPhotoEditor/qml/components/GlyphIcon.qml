@@ -32,6 +32,7 @@ Item {
         "undo": "undo.svg",
         "reset": "reset.svg",
         "save": "save.svg",
+        "save-black": "save-black.svg",
         "about": "about.svg",
         "chevronDown": "pulldown-chevron.svg",
         "image": "empty-select-photo.svg",

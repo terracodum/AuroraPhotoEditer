@@ -15,8 +15,6 @@ Rectangle {
     radius: NeonTheme.radiusMedium
     color: NeonTheme.bgCard
     opacity: enabled ? 1.0 : 0.4
-    border.width: 2
-    border.color: Qt.rgba(accent.r, accent.g, accent.b, 0.5)
 
     Column {
         anchors.centerIn: parent
