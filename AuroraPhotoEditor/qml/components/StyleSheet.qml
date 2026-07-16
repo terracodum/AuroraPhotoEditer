@@ -90,13 +90,39 @@ BottomSheet {
         clip: true
 
         delegate: Rectangle {
+            id: tile
             width: NeonTheme.px(150)
             height: NeonTheme.px(150)
             radius: NeonTheme.radiusMedium
+            clip: true
 
+            // Fallback look (shown until/unless a real preview image loads
+            // for this style — e.g. a newly added model with no preview yet).
             gradient: Gradient {
                 GradientStop { position: 0.0; color: root.tileGradients[index % root.tileGradients.length][0] }
                 GradientStop { position: 1.0; color: root.tileGradients[index % root.tileGradients.length][1] }
+            }
+
+            // Real preview: the style actually applied to a sample photo,
+            // pre-rendered offline per model (data/style_previews/<model>.jpg,
+            // same basename as the .onnx file). Falls back to the gradient
+            // above if the file is missing for a given style.
+            Image {
+                id: previewImage
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                visible: status === Image.Ready
+                source: Qt.resolvedUrl("../../data/style_previews/" + modelData.file.replace(/\.onnx$/, "") + ".jpg")
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: previewImage.status === Image.Ready
+                gradient: Gradient {
+                    GradientStop { position: 0.55; color: "transparent" }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.55) }
+                }
             }
 
             Text {
