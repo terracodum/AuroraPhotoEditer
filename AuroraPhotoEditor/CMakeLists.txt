@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 project(ru.template.AuroraPhotoEditor CXX)
 
-find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools REQUIRED)
+find_package (Qt5 COMPONENTS Core Network Qml Gui Quick LinguistTools Concurrent REQUIRED)
 
 include(FindPkgConfig)
 pkg_search_module(AURORA auroraapp REQUIRED)
 pkg_search_module(AURORA auroraapp_i18n REQUIRED)
+pkg_search_module(OPENCV REQUIRED IMPORTED_TARGET opencv-core-imgcodecs opencv4 opencv)
+
+pkg_check_modules(ONNXRUNTIME REQUIRED IMPORTED_TARGET onnxruntime)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -18,10 +21,40 @@ qt5_add_translation(QmFiles ${TsFiles})
 
 set(SOURCES
     qml/${short_name}.qml
+    qml/NeonTheme.qml
+    qml/Haptics.qml
+    qml/qmldir
     qml/cover/DefaultCoverPage.qml
     qml/pages/AboutPage.qml
     qml/pages/MainPage.qml
+    qml/pages/NoticePage.qml
+    qml/pages/MaskEditPage.qml
+    qml/pages/BatchPage.qml
+    qml/components/GlyphIcon.qml
+    qml/components/GradientRect.qml
+    qml/components/GradientSlider.qml
+    qml/components/PalettePicker.qml
+    qml/components/GradientButton.qml
+    qml/components/GlyphButton.qml
+    qml/components/ToolButton.qml
+    qml/components/SegmentedControl.qml
+    qml/components/ToastBanner.qml
+    qml/components/BusyOverlay.qml
+    qml/components/ShimmerPlaceholder.qml
+    qml/components/PageHeaderBar.qml
+    qml/components/BottomSheet.qml
+    qml/components/BackgroundSheet.qml
+    qml/components/StyleSheet.qml
+    qml/components/HistoryPanel.qml
     src/main.cpp
+    src/PipelineManager.cpp
+    src/MLInferenceEngine.cpp
+    src/MLTensorProcessor.cpp
+    src/BackgroundWorker.cpp
+    src/MLProfiler.cpp
+    src/EnhanceCommand.cpp
+    src/BackgroundCommand.cpp
+    src/StyleTransferCommand.cpp
 )
 
 set(CMAKE_SKIP_RPATH FALSE)
@@ -38,13 +71,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 >)
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Quick
+    Qt5::Concurrent
     ${AURORA_LDFLAGS}
+    PkgConfig::OPENCV
+    PkgConfig::ONNXRUNTIME
 )
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(DIRECTORY qml
+    DESTINATION share/${PROJECT_NAME}
+)
+install(DIRECTORY data
     DESTINATION share/${PROJECT_NAME}
 )
 
@@ -80,3 +119,6 @@ file(WRITE "${CMAKE_BINARY_DIR}/QtCreatorDeployment.txt"
     "${CMAKE_INSTALL_PREFIX}
 ${CMAKE_BINARY_DIR}/${PROJECT_NAME}:bin
 ")
+
+enable_testing()
+add_subdirectory(tests)
